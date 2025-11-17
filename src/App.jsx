@@ -1,29 +1,32 @@
+// src/App.jsx
+
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Import all required components
 import LandingPage from './LandingPage/LandingPage';
-import './App.css'; 
+import PatientRegistrationPage from './RegistrationPage/PatientRegistrationPage';
+import PharmacyRegistrationPage from './RegistrationPage/PharmacyRegistrationPage';
+import PatientDetailCollection from './DetailsCollection/PatientDetailsCollection';
+import PharmacyDetailCollection from './DetailsCollection/PharmacyDetailsCollection';
 
-// IMPORTANT: For react-slick to work, you must import its base CSS files.
-// Ensure you have installed slick-carousel: npm install slick-carousel
-import "slick-carousel/slick/slick.css"; 
-import "slick-carousel/slick/slick-theme.css";
-
-function App() {
-  return (
-    <div className="App">
-      {/* In a real app, you would use react-router-dom here:
+const App = () => {
+    return (
         <Router>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<PatientDashboard />} />
-            {/* ... other routes ... *
-          </Routes>
+            <Routes>
+                {/* 1. Landing Page (Role Selection) */}
+                <Route path="/" element={<LandingPage />} />
+                
+                {/* 2. Registration Pages */}
+                <Route path="/register-patient" element={<PatientRegistrationPage />} />
+                <Route path="/register-pharmacy" element={<PharmacyRegistrationPage />} />
+
+                {/* 3. Detail Collection Pages */}
+                <Route path="/patient-details" element={<PatientDetailCollection />} />
+                <Route path="/pharmacy-details" element={<PharmacyDetailCollection />} />
+            </Routes>
         </Router>
-      */}
-      
-      {/* For this static design, we render the LandingPage directly */}
-      <LandingPage />
-    </div>
-  );
-}
+    );
+};
 
 export default App;

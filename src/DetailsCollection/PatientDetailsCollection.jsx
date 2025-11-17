@@ -1,0 +1,312 @@
+// src/Pages/PatientDetailsCollection.jsx
+
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Logo from '../assets/Logo.jpeg';
+import UserIcon from '../assets/user.png'; 
+import '../RegistrationFormsCommon.css';
+
+const PatientDetailsCollectionPage = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    const initialData = location.state?.userData || {}; 
+    
+    const [edit, setEdit] = useState({
+        name: false,
+        email: false,
+    });
+    
+    const initialFamilyMember = { name: '', relation: '', dob: '' };
+
+    const [details, setDetails] = useState({
+        name: initialData.name || '',
+        email: initialData.email || '',
+        password: initialData.password || '', 
+        phone: '',
+        address: '',
+        city: '',
+        province: '',
+        postalCode: '',
+        dob: '',
+        gender: '',
+        nic: '',
+        medicalConditions: '',
+        allergies: '',
+        chronicDiseases: '',
+        currentMedications: '',
+        bloodGroup: '',
+        deliveryAddress: '',
+        altContact: '',
+        profilePhoto: null,
+        description: '',
+        
+        familyMembers: [
+            { ...initialFamilyMember, id: Date.now() + 1 }, 
+        ]
+    });
+
+    const handleChange = (e) => {
+        setDetails({ ...details, [e.target.name]: e.target.value });
+    };
+
+    const handleEditToggle = (field) => {
+        setEdit(prev => ({ ...prev, [field]: !prev[field] }));
+    };
+    
+    const handlePasswordEdit = () => {
+        alert("Password change functionality goes here! (New Password modal/fields)");
+    };
+
+    const handleFamilyChange = (id, field, value) => {
+        setDetails(prev => ({
+            ...prev,
+            familyMembers: prev.familyMembers.map(member => 
+                member.id === id ? { ...member, [field]: value } : member
+            )
+        }));
+    };
+
+    const addFamilyMember = () => {
+        if (details.familyMembers.length < 3) {
+            setDetails(prev => ({
+                ...prev,
+                familyMembers: [
+                    ...prev.familyMembers,
+                    { ...initialFamilyMember, id: Date.now() + Math.random() }
+                ]
+            }));
+        }
+    };
+
+    const deleteFamilyMember = (id) => {
+        setDetails(prev => ({
+            ...prev,
+            familyMembers: prev.familyMembers.filter(member => member.id !== id)
+        }));
+    };
+
+    const handleFinalRegistration = (e) => {
+        e.preventDefault();
+        
+        const finalData = { ...initialData, ...details };
+        console.log("Final Patient Registration Data:", finalData);
+
+        navigate('/registration-success', { state: { role: 'Patient' } });
+    };
+
+    const FamilyMemberInputs = ({ member, index }) => (
+        <div key={member.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+            {details.familyMembers.length > 0 && (
+                 <button 
+                    type="button" 
+                    className="delete-btn"
+                    onClick={() => deleteFamilyMember(member.id)}
+                >
+                    Delete
+                </button>
+            )}
+            <h4 style={{ color: '#0C6C1E', margin: '0 0 10px 0', fontSize: '1.1rem' }}>Family Member {index + 1}</h4>
+            <div className="input-row">
+                <label htmlFor={`family_name_${member.id}`}>Full Name</label>
+                <input type="text" id={`family_name_${member.id}`} value={member.name} onChange={(e) => handleFamilyChange(member.id, 'name', e.target.value)} />
+            </div>
+            <div className="input-row">
+                <label htmlFor={`family_relation_${member.id}`}>Relation</label>
+                <input type="text" id={`family_relation_${member.id}`} value={member.relation} onChange={(e) => handleFamilyChange(member.id, 'relation', e.target.value)} />
+            </div>
+            <div className="input-row">
+                <label htmlFor={`family_dob_${member.id}`}>Date of Birth</label>
+                <input type="date" id={`family_dob_${member.id}`} value={member.dob} onChange={(e) => handleFamilyChange(member.id, 'dob', e.target.value)} />
+            </div>
+            <div style={{ clear: 'both' }}></div> {/* Clear float */}
+        </div>
+    );
+
+
+    return (
+        <div className="registration-page details-collection-page">
+            <div className="form-wrapper center-wrapper">
+                <div className="details-container patient-register-bg">
+                    <div className="header-logo">
+                        <img src={Logo} alt="MediCare Logo" className="logo-img"/>
+                    </div>
+                    
+                    <h3>Patient Detail Collection</h3>
+
+                    <form onSubmit={handleFinalRegistration}>
+
+                        {/* Profile Photo Section (Optional) */}
+                        <div className="profile-section">
+                            <div className="profile-image-wrapper">
+                                <img src={UserIcon} alt="Profile Placeholder" />
+                                <label htmlFor="profilePhotoInput" className="camera-icon-overlay">
+                                    &#128247; 
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="profilePhotoInput" 
+                                    name="profilePhoto" 
+                                    accept="image/*" 
+                                    style={{ display: 'none' }} 
+                                    onChange={(e) => setDetails({...details, profilePhoto: e.target.files[0]})}
+                                />
+                            </div>
+                            <small>Profile Photo (Optional)</small>
+                        </div>
+                        
+                        {/* 1. Basic Information (Editable, Pre-filled, Not required for submission) */}
+                        <h3 style={{ marginBottom: '15px' }}>✅ Basic Information</h3>
+                        <div className="input-row">
+                            <label htmlFor="name">Full Name</label>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                name="name" 
+                                value={details.name} 
+                                onChange={handleChange} 
+                                readOnly={!edit.name}
+                                className={!edit.name ? 'display-input' : ''}
+                            />
+                            <span className="edit-icon" onClick={() => handleEditToggle('name')}>&#9998;</span> 
+                        </div>
+
+                        <div className="input-row">
+                            <label htmlFor="email">Email Address</label>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                value={details.email} 
+                                onChange={handleChange} 
+                                readOnly={!edit.email}
+                                className={!edit.email ? 'display-input' : ''}
+                            />
+                            <span className="edit-icon" onClick={() => handleEditToggle('email')}>&#9998;</span>
+                        </div>
+                        
+                        <div className="input-row">
+                            <label>Password</label>
+                            <input 
+                                type="password" 
+                                value="********" 
+                                readOnly 
+                                className="display-input"
+                            />
+                            <button type="button" className="password-edit-btn" onClick={handlePasswordEdit}>
+                                Change Password
+                            </button>
+                        </div>
+                        
+                        <div className="input-row required-field">
+                            <label htmlFor="phone">Phone Number</label>
+                            <input type="text" id="phone" name="phone" value={details.phone} onChange={handleChange} placeholder="Contact Number (OTP/Verification)" required />
+                        </div>
+                        
+                        <div className="input-row">
+                            <label htmlFor="description">Description (Optional)</label>
+                            <textarea id="description" name="description" value={details.description} onChange={handleChange} placeholder="Tell us more about yourself..." rows="3" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
+                        </div>
+
+                        {/* 2. Address Details (Optional) */}
+                        <h3>🏠 Address Details</h3>
+                        <div className="input-row">
+                            <label htmlFor="address">Street Address</label>
+                            <input type="text" id="address" name="address" value={details.address} onChange={handleChange} />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="city">City</label>
+                            <input type="text" id="city" name="city" value={details.city} onChange={handleChange} />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="province">District / Province</label>
+                            <input type="text" id="province" name="province" value={details.province} onChange={handleChange} />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="postalCode">Postal Code</label>
+                            <input type="text" id="postalCode" name="postalCode" value={details.postalCode} onChange={handleChange} />
+                        </div>
+
+                        {/* 3. Identity / DOB (Optional) */}
+                        <h3>🆔 Identity / DOB</h3>
+                        <div className="input-row">
+                            <label htmlFor="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" value={details.dob} onChange={handleChange} />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="gender">Gender</label>
+                            <select id="gender" name="gender" value={details.gender} onChange={handleChange} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '8px' }}>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="nic">NIC (Optional)</label>
+                            <input type="text" id="nic" name="nic" value={details.nic} onChange={handleChange} placeholder="National Identity Card" />
+                        </div>
+                        
+                        {/* 4. Health Profile (Optional) */}
+                        <h3>🩺 Health Profile</h3>
+                        <div className="input-row">
+                            <label htmlFor="medicalConditions">Existing Medical Conditions</label>
+                            <input type="text" id="medicalConditions" name="medicalConditions" value={details.medicalConditions} onChange={handleChange} placeholder="e.g., Asthma, High BP" />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="allergies">Allergies (Drug/Food)</label>
+                            <input type="text" id="allergies" name="allergies" value={details.allergies} onChange={handleChange} placeholder="e.g., Penicillin, Peanuts" />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="chronicDiseases">Chronic Diseases</label>
+                            <input type="text" id="chronicDiseases" name="chronicDiseases" value={details.chronicDiseases} onChange={handleChange} placeholder="e.g., Diabetes, Chronic Kidney Disease" />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="currentMedications">Current Medications</label>
+                            <input type="text" id="currentMedications" name="currentMedications" value={details.currentMedications} onChange={handleChange} placeholder="e.g., Metformin, Lisinopril" />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="bloodGroup">Blood Group</label>
+                            <input type="text" id="bloodGroup" name="bloodGroup" value={details.bloodGroup} onChange={handleChange} placeholder="e.g., A+, O-" />
+                        </div>
+
+                        {/* 5. Family Members */}
+                        <h3>👨‍👩‍👧‍👦 Family Members (Up to 3)</h3>
+                        {details.familyMembers.map((member, index) => (
+                            <FamilyMemberInputs member={member} index={index} key={member.id} />
+                        ))}
+                        
+                        {details.familyMembers.length < 3 && (
+                            <button 
+                                type="button" 
+                                onClick={addFamilyMember} 
+                                className="password-edit-btn" 
+                                style={{ marginTop: '0', marginBottom: '20px' }}>
+                                + Add Family Member ({details.familyMembers.length}/3)
+                            </button>
+                        )}
+
+
+                        {/* 6. Delivery Preferences (Optional) */}
+                        <h3>📦 Delivery Preferences</h3>
+                        <div className="input-row">
+                            <label htmlFor="deliveryAddress">Default Delivery Address</label>
+                            <input type="text" id="deliveryAddress" name="deliveryAddress" value={details.deliveryAddress} onChange={handleChange} placeholder="Same as permanent address or new address" />
+                        </div>
+                        <div className="input-row">
+                            <label htmlFor="altContact">Alternative Contact Number</label>
+                            <input type="text" id="altContact" name="altContact" value={details.altContact} onChange={handleChange} placeholder="Alternative Phone Number" />
+                        </div>
+                        
+                        {/* FINAL REGISTER BUTTON */}
+                        <button type="submit" className="register-btn primary-btn">
+                            Complete Registration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PatientDetailsCollectionPage;

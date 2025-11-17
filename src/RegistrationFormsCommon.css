@@ -1,0 +1,369 @@
+/* src/RegistrationFormsCommon.css */
+
+/* --- CSS Variables --- */
+:root {
+    /* New Registration Form Gradient */
+    --reg-form-color-start: #18D23A; 
+    --reg-form-color-end: #0C6C1E; 
+
+    /* New Detail Page Background Gradient */
+    --detail-bg-color-start: #BCFFC6;
+    --detail-bg-color-end: #18D23A;
+}
+
+/* --- 1. Main Page Container --- */
+.registration-page {
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f7f7f7; 
+    padding: 20px 0; 
+    position: relative; 
+    z-index: 50; 
+}
+
+.details-collection-page {
+    background: linear-gradient(to bottom right, var(--detail-bg-color-start), var(--detail-bg-color-end));
+}
+
+/* --- 2. Wrapper for the Two-Column Layout --- */
+.form-wrapper {
+    display: flex;
+    width: 90%;
+    max-width: 1100px; 
+    border-radius: 15px;
+    overflow: hidden; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background-color: white;
+}
+
+.center-wrapper {
+    justify-content: center;
+    background-color: transparent;
+    box-shadow: none;
+    width: 100%; 
+}
+
+/* --- 3. Left Side: Image/Illustration Container --- */
+.image-container {
+    flex: 1.5; 
+    max-width: 40%; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff; 
+    padding: 40px;
+    text-align: center;
+}
+
+.image-container img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.image-caption {
+    margin-top: 20px;
+    font-size: 1rem;
+    color: #555;
+    font-style: italic;
+}
+
+
+/* --- 4. Right Side: Form Container --- */
+.register-container, .details-container {
+    flex: 1; 
+    min-width: 350px;
+    padding: 40px 30px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.register-container {
+    background: linear-gradient(135deg, var(--reg-form-color-start), var(--reg-form-color-end));
+}
+
+.details-container {
+    min-width: 500px; 
+    background-color: white; 
+    color: #333; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    padding: 30px 40px;
+}
+
+.header-logo {
+    margin-bottom: 20px;
+}
+
+.logo-img {
+    width: 80px; 
+    height: auto;
+    border-radius: 0; 
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    font-weight: 700;
+}
+
+h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #18D23A; 
+    width: 100%;
+    text-align: left;
+    border-bottom: 2px solid #BCFFC6;
+    padding-bottom: 5px;
+    margin-top: 20px;
+}
+h3:first-of-type {
+    margin-top: 0;
+}
+
+/* --- 5. Input Styling --- */
+.input-row {
+    margin-bottom: 15px;
+    text-align: left;
+    width: 100%;
+    position: relative; 
+}
+
+/* Labels for Step 1 forms (white) */
+.register-container .input-row label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Labels for Detail forms (dark) */
+.details-container .input-row label {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Required field indicator on detail page */
+.details-container .input-row label:after {
+    content: '*';
+    color: red;
+    margin-left: 3px;
+    display: none; /* Default hidden, enabled by .required-field class */
+}
+.details-container .required-field label:after {
+    display: inline;
+}
+
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+input[type="time"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #333;
+    background-color: rgba(255, 255, 255, 0.9);
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+/* Inputs in the green container (Step 1) */
+.register-container input {
+    border: none;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Read-only/Grayed inputs for Step 2 */
+.display-input {
+    background-color: #f0f0f0;
+    color: #888;
+    cursor: default;
+    border: 1px solid #ddd;
+    padding-right: 40px; 
+}
+
+.edit-icon {
+    position: absolute;
+    right: 15px;
+    top: 35px; 
+    cursor: pointer;
+    color: #18D23A;
+    font-size: 1.1rem;
+    padding: 5px;
+    z-index: 10;
+}
+
+/* Pharmacy Admin Message Styling */
+.admin-message {
+    width: 100%;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    text-align: left;
+}
+
+/* --- Profile Picture/Camera Styling --- */
+.profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.profile-image-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #eee;
+    margin-bottom: 10px;
+    border: 2px solid #18D23A;
+    overflow: hidden;
+}
+.profile-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.camera-icon-overlay {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #18D23A;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    border: 2px solid white;
+}
+
+/* --- Family Member Delete Button --- */
+.delete-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    float: right;
+}
+.delete-btn:hover {
+    background-color: #cc0000;
+}
+
+.password-edit-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #f7f7f7;
+    color: #18D23A;
+    border: 1px solid #18D23A;
+    border-radius: 8px;
+    margin-top: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+.password-edit-btn:hover {
+    background-color: #e0ffe0;
+}
+/* ... rest of the button/separator/link styling unchanged ... */
+
+/* --- 6. Button and Link Styling --- */
+.primary-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.3s;
+}
+
+.register-btn {
+    background-color: #000000; /* Dark button on green background */
+    color: white;
+}
+
+.register-btn:hover {
+    background-color: #333333;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: rgba(255, 255, 255, 0.7);
+    width: 100%;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.separator:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.separator:not(:empty)::after {
+    margin-left: .5em;
+}
+
+.social-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    color: #333;
+    border: 1px solid #ccc;
+    font-weight: 500;
+}
+
+.social-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.google-icon {
+    width: 20px;
+    margin-right: 10px;
+}
+
+.login-link {
+    margin-top: 20px;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.login-link span {
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    color: white;
+}
