@@ -1,0 +1,27 @@
+/* src/App.css */
+
+/* Basic styling for the root of the application */
+body, html, #root, .App {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  scroll-behavior: smooth;
+  background-color: #FFFFFF;
+}
+
+/* Ensure images don't overflow */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Base button styling */
+button {
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.98);
+}

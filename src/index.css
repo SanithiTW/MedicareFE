@@ -1,0 +1,12 @@
+/* index.css - global resets */
+* { box-sizing: border-box; }
+html,body,#root { height: 100%; margin: 0; padding: 0; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #FFFFFF;
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button { font-family: inherit; }
+img { display: block; max-width: 100%; }

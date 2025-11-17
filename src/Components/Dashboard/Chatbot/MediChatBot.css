@@ -1,0 +1,60 @@
+/* Chat panel inner styles */
+.mc-root{height:100%;display:flex;flex-direction:column;overflow:hidden}
+.mc-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--deep-green);color:var(--white)}
+.mc-title{display:flex;gap:10px;align-items:center}
+.mc-botimg{width:36px;height:36px;border-radius:6px}
+.mc-main{font-weight:700}
+.mc-sub{font-size:12px;opacity:0.9}
+.mc-close{background:transparent;border:none;color:var(--white);font-size:20px;cursor:pointer}
+
+/* messages area */
+.mc-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto; /* enable vertical scrolling */
+  background: linear-gradient(180deg, #ffffff, #f6fff6);
+  display: flex;
+  flex-direction: column; /* stack messages vertically */
+  align-items: flex-start; /* align messages to top/left */
+  justify-content: flex-start; /* prevent vertical centering */
+  gap: 8px; /* space between messages */
+}
+
+.mc-msg {
+  display: flex;
+  max-width: 78%;
+  word-break: break-word; /* prevent overflow */
+}
+
+.mc-msg.bot {
+  align-self: flex-start;
+}
+
+.mc-msg.user {
+  align-self: flex-end;
+  justify-content: flex-end;
+}
+
+.mc-msg-text {
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.25;
+}
+
+.mc-msg.bot .mc-msg-text {
+  background: var(--light-green);
+  color: var(--black);
+  border-radius: 14px;
+}
+
+.mc-msg.user .mc-msg-text {
+  background: #dff7e0;
+  color: var(--black);
+}
+
+
+/* input footer */
+.mc-input{display:flex;padding:12px;border-top:1px solid var(--muted-gray);gap:8px;background:var(--white)}
+.mc-input input{flex:1;padding:10px;border-radius:12px;border:1px solid #e7e7e7;outline:none}
+.mc-input button{background:var(--deep-green);color:var(--white);border:none;padding:8px 14px;border-radius:10px;cursor:pointer;transition:transform .15s}
+.mc-input button:hover{transform:translateY(-2px)}
