@@ -1,27 +1,320 @@
-/* src/App.css */
+/* App.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
-/* Basic styling for the root of the application */
-body, html, #root, .App {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
-  scroll-behavior: smooth;
-  background-color: #FFFFFF;
+:root {
+    /* Colors from requirements */
+    --color-green-dark: #0C6C1E; /* Darkest green (Register gradient end) */
+    --color-green-medium: #18D23A; /* Medium green (Register gradient start / Detail gradient end) */
+    --color-button-register: #0C9A26; /* Register button */
+    --color-button-detail: #07741B; /* Detail collection button */
+    --color-button-google: #96A1FF; /* Google sign-in */
+    --color-light-green: #BCFFC6; /* Lightest green (Detail gradient start) */
+    --color-text-gray: #757575; /* Gray for non-editable/placeholder text */
+    --color-white: #FFFFFF;
+    --color-red: #E53935; /* Standard red for logo/icons */
 }
 
-/* Ensure images don't overflow */
-img {
-    max-width: 100%;
-    height: auto;
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
 }
 
-/* Base button styling */
-button {
-    transition: background-color 0.3s ease, transform 0.1s ease;
+/* --- General Card Styling (Matching Image 3) --- */
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 40px auto;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 0 10px;
+}
+.header-logo img {
+    width: 30px;
+    height: 30px;
+}
+.header-logo span {
+    color: var(--color-green-medium);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-left: 5px;
+}
+
+/* --- Registration Page Styling --- */
+.register-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.register-container {
+    background: linear-gradient(180deg, var(--color-green-medium), var(--color-green-dark));
+    padding: 30px 40px;
+    color: var(--color-white);
+    text-align: center;
+    position: relative;
+}
+
+.register-container h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.register-container input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.register-container button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.register-btn {
+    background-color: var(--color-button-register);
+    color: var(--color-white);
+    margin-bottom: 10px;
+}
+
+.google-btn {
+    background-color: var(--color-button-google);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.google-btn img {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+.register-container p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.register-container a {
+    color: var(--color-white);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* --- Detail Collection Page Styling --- */
+.detail-collection-container {
+    background: linear-gradient(180deg, var(--color-light-green), var(--color-green-medium));
+    padding: 30px 25px;
+    color: #333;
+}
+
+.detail-collection-container h2 {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--color-button-detail);
+}
+
+.profile-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-image-wrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.profile-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--color-light-green);
+    border: 3px solid var(--color-button-detail);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.profile-image img {
+    width: 90%;
+    height: 90%;
+    object-fit: cover;
+}
+
+.camera-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: var(--color-button-detail);
+    color: var(--color-white);
+    border-radius: 50%;
+    padding: 5px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
 }
 
-button:active {
-    transform: scale(0.98);
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.input-field {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding: 5px 0;
+}
+
+.input-field input, .input-field textarea {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    padding: 5px 0;
+    font-size: 1rem;
+}
+
+.input-field input:focus, .input-field textarea:focus {
+    outline: none;
+}
+
+.input-field input[disabled] {
+    color: var(--color-text-gray);
+    cursor: default;
+}
+
+.edit-icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.password-edit-btn {
+    background-color: transparent;
+    border: 1px solid var(--color-button-detail);
+    color: var(--color-button-detail);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-left: 10px;
+    font-weight: 500;
+}
+
+/* Specific Patient Details Styles */
+.patient-details .input-field {
+    border: none;
+    border-bottom: 1px solid #ccc;
+}
+
+.patient-details .input-field:last-of-type {
+    margin-bottom: 20px;
+}
+
+.health-profile-section h4 {
+    color: var(--color-button-detail);
+    margin-top: 25px;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--color-button-detail);
+    padding-bottom: 5px;
+}
+
+/* Specific Pharmacy Details Styles */
+.pharmacy-details .section-title {
+    color: var(--color-button-detail);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid rgba(7, 116, 27, 0.2);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: var(--color-button-detail);
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.action-buttons button {
+    width: 45%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.save-btn {
+    background-color: var(--color-button-detail);
+    color: var(--color-white);
+}
+
+.clear-btn {
+    background-color: #e0e0e0;
+    color: #333;
 }
