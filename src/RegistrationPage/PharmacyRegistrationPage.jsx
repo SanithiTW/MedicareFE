@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg'; 
 import RegistrationImage from '../assets/registration_img.png'; 
 import '../RegistrationFormsCommon.css'; 
-import GoogleIcon from '../assets/google.png'; 
+
 
 
 const PharmacyRegistrationPage = () => {
@@ -79,10 +79,7 @@ const PharmacyRegistrationPage = () => {
                             <span>or</span>
                         </div>
                         
-                    <button type="button" className="google-sign-in">
-                        <img src={GoogleIcon} alt="Google" />
-                        Sign in with Google
-                    </button>
+
 
                         <p className="login-link">
                             Already have an account? <span onClick={() => navigate('/login')}>Sign In</span>

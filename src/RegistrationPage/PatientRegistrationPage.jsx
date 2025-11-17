@@ -79,7 +79,7 @@ const PatientRegistrationPage = () => {
                         </div>
                         
                         <button type="submit" className="register-btn primary-btn" style={{ marginTop: '20px' }}>
-                            Continue
+                            Register
                         </button>
                         
                         <div className="separator">
