@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg'; 
 import RegistrationImage from '../assets/registration_img.png'; 
 import '../RegistrationFormsCommon.css'; 
+import API from "../api/api";
 
 
 
@@ -20,20 +21,32 @@ const PharmacyRegistrationPage = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleContinue = (e) => {
-        e.preventDefault();
-        
-        navigate('/pharmacy-details', { 
-            state: { 
-                userData: {
-                    role: 'Pharmacy',
-                    pharmacyname: formData.pharmacyname,
-                    name: formData.name, 
-                    // Email and Password are not passed or required yet
-                }
-            }
-        });
+    const handleContinue = async (e) => {
+  e.preventDefault();
+
+  try {
+    const payload = {
+      pharmacyname: formData.pharmacyname,
+      name: formData.name,
+      createdAt: Date.now()
     };
+
+    const res = await API.post("/pharmacy/step1", payload);
+    const pendingId = res.data?.pendingId;
+    if (!pendingId) throw new Error("No pendingId returned");
+
+    // store and navigate to details page
+    localStorage.setItem("pharmacy_pendingId", pendingId);
+
+    navigate('/pharmacy-details', {
+      state: { userData: { role: 'Pharmacy', pharmacyname: formData.pharmacyname, name: formData.name } }
+    });
+
+  } catch (err) {
+    console.error("pharmacy step1 failed", err);
+    alert("Failed to submit pharmacy step 1.");
+  }
+};
 
     return (
         <div className="registration-page">

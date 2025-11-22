@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
-import '../RegistrationFormsCommon.css'; 
+import '../RegistrationFormsCommon.css';
+import API from "../api/api";
+
 
 const PharmacyDetailsCollectionPage = () => {
     const navigate = useNavigate();
@@ -84,7 +86,7 @@ const PharmacyDetailsCollectionPage = () => {
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
-        
+    
         if (type === 'file') {
             setDetails({ ...details, [name]: files[0] });
         } else {
@@ -117,17 +119,49 @@ const PharmacyDetailsCollectionPage = () => {
         setEdit(prev => ({ ...prev, [field]: !prev[field] }));
     };
     
-    const handleFinalRegistration = (e) => {
-        e.preventDefault();
-        
-        // Filter out the initial data fields not relevant anymore (like initial email/password)
-        const finalData = { ...details };
+const handleFinalRegistration = async (e) => {
+  e.preventDefault();
 
-        console.log("Final Pharmacy Registration Data:", finalData);
-        // *** TODO: Call API to complete registration ***
+  try {
+    const pendingId = localStorage.getItem("pharmacy_pendingId");
+    if (!pendingId) {
+      alert("Missing pendingId. Submit step 1 first.");
+      return;
+    }
 
-        navigate('/registration-success', { state: { role: 'Pharmacy' } });
-    };
+    const formDataToSend = new FormData();
+
+    // append text fields
+    Object.keys(details).forEach(key => {
+      const val = details[key];
+      // skip files and objects that are not plain values
+      if (val instanceof File) return;
+      if (typeof val === "object") {
+        // for nested objects like services or operatingDays convert to JSON string
+        formDataToSend.append(key, JSON.stringify(val));
+      } else {
+        formDataToSend.append(key, val ?? "");
+      }
+    });
+
+    // append files (if present)
+    if (details.regCertificate) formDataToSend.append("regCertificate", details.regCertificate);
+    if (details.pharmacistLicenseCopy) formDataToSend.append("pharmacistLicenseCopy", details.pharmacistLicenseCopy);
+    if (details.frontPhoto) formDataToSend.append("frontPhoto", details.frontPhoto);
+    if (details.ownerID) formDataToSend.append("ownerID", details.ownerID);
+
+    const res = await API.post(` /pharmacy/${pendingId}/complete`.trim(), formDataToSend, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    alert("Pharmacy submitted for approval");
+    navigate('/registration-success', { state: { role: 'Pharmacy' } });
+
+  } catch (err) {
+    console.error("pharmacy complete error:", err);
+    alert("Submission failed: " + (err?.response?.data?.error || err.message));
+  }
+};
 
     const FileUploadRow = ({ name, label }) => (
         <div className="input-row">

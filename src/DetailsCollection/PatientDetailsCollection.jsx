@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
 import UserIcon from '../assets/user.png'; 
 import '../RegistrationFormsCommon.css';
+import API from "../api/api";
 
 const PatientDetailsCollectionPage = () => {
     const navigate = useNavigate();
@@ -86,15 +87,33 @@ const PatientDetailsCollectionPage = () => {
         }));
     };
 
-    const handleFinalRegistration = (e) => {
-        e.preventDefault();
-        
-        const finalData = { ...initialData, ...details };
-        console.log("Final Patient Registration Data:", finalData);
+const handleFinalRegistration = async (e) => {
+  e.preventDefault();
 
-        navigate('/registration-success', { state: { role: 'Patient' } });
-    };
+  const finalData = { ...initialData, ...details };
+  // Optionally remove large File object before sending if you upload separately
+  if (finalData.profilePhoto) {
+    // we will not send file in this JSON endpoint. If you want to upload profile photo, do a separate storage endpoint.
+    delete finalData.profilePhoto;
+  }
 
+  try {
+    const uid = localStorage.getItem("patient_uid") || finalData.uid;
+    if (!uid) {
+      alert("Missing UID. Complete step 1 first.");
+      return;
+    }
+
+    await API.post(`/patient/${uid}/complete`, finalData);
+    alert("🎉 Registration Complete!");
+    navigate('/patient-dashboard');
+
+  } catch (err) {
+    console.error("patient complete error:", err);
+    const msg = err?.response?.data?.error || err.message;
+    alert("Registration failed: " + msg);
+  }
+};
     const FamilyMemberInputs = ({ member, index }) => (
         <div key={member.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
             {details.familyMembers.length > 0 && (
