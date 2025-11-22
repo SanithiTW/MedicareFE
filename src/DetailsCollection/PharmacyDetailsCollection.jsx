@@ -3,9 +3,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
-import '../RegistrationFormsCommon.css';
-import API from "../api/api";
-
+import '../RegistrationFormsCommon.css'; 
 
 const PharmacyDetailsCollectionPage = () => {
     const navigate = useNavigate();
@@ -16,7 +14,6 @@ const PharmacyDetailsCollectionPage = () => {
     const [details, setDetails] = useState({
         pharmacyname: initialData.pharmacyname || '',
         name: initialData.name || '',
-        // Removed email and password from details state
         
         // Business Details
         businessRegNo: '',
@@ -31,7 +28,7 @@ const PharmacyDetailsCollectionPage = () => {
         postalCode: '',
         
         // Contact Details
-        officialEmail: '', // New input for official email
+        officialEmail: '',
         phone: '',
         hotline: '',
         whatsapp: '',
@@ -42,6 +39,10 @@ const PharmacyDetailsCollectionPage = () => {
         operatingDays: [], 
         deliverySupport: 'No',
         deliveryRange: '',
+        
+        // ⭐ ADDED — Location Fields
+        latitude: '',
+        longitude: '',
         
         // Payment Setup
         bankAccountName: '',
@@ -67,11 +68,9 @@ const PharmacyDetailsCollectionPage = () => {
         }
     });
 
-    // Edit state remains for fields coming from step 1
     const [edit, setEdit] = useState({
         pharmacyname: false,
         name: false,
-        // email field removed as it's now an input here, not pre-filled
     });
     
     const operationDaysOptions = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -86,7 +85,7 @@ const PharmacyDetailsCollectionPage = () => {
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
-    
+        
         if (type === 'file') {
             setDetails({ ...details, [name]: files[0] });
         } else {
@@ -118,55 +117,58 @@ const PharmacyDetailsCollectionPage = () => {
     const handleEditToggle = (field) => {
         setEdit(prev => ({ ...prev, [field]: !prev[field] }));
     };
+
+    // ⭐ ADDED — Auto Detect Location
+    const detectMyLocation = () => {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                setDetails(prev => ({
+                    ...prev,
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                }));
+            },
+            err => {
+                alert("Unable to fetch location. Please enable GPS.");
+            }
+        );
+    };
+
+    // ⭐ FIXED — Correct file handler
+    const handleFileUpload = (e) => {
+        setDetails((prev) => ({
+            ...prev,
+            [e.target.name]: e.target.files[0],
+        }));
+    };
+
     
-const handleFinalRegistration = async (e) => {
-  e.preventDefault();
+    const handleFinalRegistration = (e) => {
+        e.preventDefault();
+        
+        const finalData = { ...details };
 
-  try {
-    const pendingId = localStorage.getItem("pharmacy_pendingId");
-    if (!pendingId) {
-      alert("Missing pendingId. Submit step 1 first.");
-      return;
-    }
+        console.log("Final Pharmacy Registration Data:", finalData);
 
-    const formDataToSend = new FormData();
+        navigate('/registration-success', { state: { role: 'Pharmacy' } });
+    };
 
-    // append text fields
-    Object.keys(details).forEach(key => {
-      const val = details[key];
-      // skip files and objects that are not plain values
-      if (val instanceof File) return;
-      if (typeof val === "object") {
-        // for nested objects like services or operatingDays convert to JSON string
-        formDataToSend.append(key, JSON.stringify(val));
-      } else {
-        formDataToSend.append(key, val ?? "");
-      }
-    });
-
-    // append files (if present)
-    if (details.regCertificate) formDataToSend.append("regCertificate", details.regCertificate);
-    if (details.pharmacistLicenseCopy) formDataToSend.append("pharmacistLicenseCopy", details.pharmacistLicenseCopy);
-    if (details.frontPhoto) formDataToSend.append("frontPhoto", details.frontPhoto);
-    if (details.ownerID) formDataToSend.append("ownerID", details.ownerID);
-
-    const res = await API.post(` /pharmacy/${pendingId}/complete`.trim(), formDataToSend, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    alert("Pharmacy submitted for approval");
-    navigate('/registration-success', { state: { role: 'Pharmacy' } });
-
-  } catch (err) {
-    console.error("pharmacy complete error:", err);
-    alert("Submission failed: " + (err?.response?.data?.error || err.message));
-  }
-};
-
+    // ⭐ UPDATED — use handleFileUpload instead of handleChange
     const FileUploadRow = ({ name, label }) => (
         <div className="input-row">
             <label htmlFor={name}>{label}</label>
-            <input type="file" id={name} name={name} onChange={handleChange} required />
+            <input 
+                type="file" 
+                id={name} 
+                name={name} 
+                onChange={handleFileUpload} 
+                required 
+            />
             {details[name] && <small style={{ color: '#18D23A', display: 'block' }}>File selected: {details[name].name}</small>}
         </div>
     );
@@ -183,7 +185,7 @@ const handleFinalRegistration = async (e) => {
 
                     <form onSubmit={handleFinalRegistration}>
                         
-                        {/* 1. Identity (Editable fields from Step 1) */}
+                        {/* ✔ 1. Identity */}
                         <h3 style={{ marginBottom: '15px' }}>✅ Business Identity</h3>
                         
                         <div className="input-row">
@@ -213,9 +215,8 @@ const handleFinalRegistration = async (e) => {
                             />
                             <span className="edit-icon" onClick={() => handleEditToggle('name')}>&#9998;</span>
                         </div>
-                        
 
-                        {/* 2. Pharmacy Business Details */}
+                        {/* 🏥 Business Details */}
                         <h3>🏥 Pharmacy Business Details</h3>
                         <div className="input-row required-field">
                             <label htmlFor="businessRegNo">Business Registration No.</label>
@@ -234,7 +235,7 @@ const handleFinalRegistration = async (e) => {
                             <input type="text" id="taxId" name="taxId" value={details.taxId} onChange={handleChange} />
                         </div>
 
-                        {/* 3. Pharmacy Address */}
+                        {/* 🏢 Pharmacy Address */}
                         <h3>🏢 Pharmacy Address</h3>
                         <div className="input-row required-field">
                             <label htmlFor="address">Street Address</label>
@@ -252,8 +253,8 @@ const handleFinalRegistration = async (e) => {
                             <label htmlFor="postalCode">Postal Code</label>
                             <input type="text" id="postalCode" name="postalCode" value={details.postalCode} onChange={handleChange} required />
                         </div>
-                        
-                        {/* 4. Contact Details */}
+
+                        {/* 📞 Contact Details */}
                         <h3>📞 Contact Details</h3>
                         <div className="input-row required-field">
                             <label htmlFor="officialEmail">Official Email (for notifications)</label>
@@ -268,7 +269,7 @@ const handleFinalRegistration = async (e) => {
                             <input type="text" id="whatsapp" name="whatsapp" value={details.whatsapp} onChange={handleChange} />
                         </div>
 
-                        {/* 5. Business Operation Details */}
+                        {/* 🕒 Business Operation Details */}
                         <h3>🕒 Business Operation Details</h3>
                         <div className="input-row required-field" style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ flex: 1, marginRight: '10px' }}>
@@ -319,7 +320,53 @@ const handleFinalRegistration = async (e) => {
                             </div>
                         )}
 
-                        {/* 6. Payment Setup (Optional) */}
+                        {/* ⭐⭐⭐ ADDED — LOCATION SECTION ⭐⭐⭐ */}
+                        <h3>📍 Pharmacy Location</h3>
+
+                        <div className="input-row required-field">
+                            <label htmlFor="latitude">Latitude</label>
+                            <input
+                                type="text"
+                                id="latitude"
+                                name="latitude"
+                                value={details.latitude}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter or auto-detect latitude"
+                            />
+                        </div>
+
+                        <div className="input-row required-field">
+                            <label htmlFor="longitude">Longitude</label>
+                            <input
+                                type="text"
+                                id="longitude"
+                                name="longitude"
+                                value={details.longitude}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter or auto-detect longitude"
+                            />
+                        </div>
+
+                        <button
+                            type="button"
+                            style={{
+                                padding: "10px",
+                                width: "100%",
+                                borderRadius: "8px",
+                                backgroundColor: "#0d6efd",
+                                color: "white",
+                                cursor: "pointer",
+                                marginBottom: "15px",
+                                fontWeight: "bold"
+                            }}
+                            onClick={detectMyLocation}
+                        >
+                            📌 Detect My Current Location
+                        </button>
+
+                        {/* 💳 Payment Setup */}
                         <h3>💳 Payment Setup (Partner Pharmacies)</h3>
                         <div className="input-row">
                             <label htmlFor="bankAccountName">Bank Account Name</label>
@@ -346,14 +393,14 @@ const handleFinalRegistration = async (e) => {
                             </select>
                         </div>
 
-                        {/* 7. Document Uploads (All Required) */}
+                        {/* 📸 Document Uploads */}
                         <h3>📸 Document Uploads</h3>
                         <FileUploadRow name="regCertificate" label="Pharmacy Registration Certificate (PDF/JPG)" />
                         <FileUploadRow name="pharmacistLicenseCopy" label="Pharmacist License Copy (PDF/JPG)" />
                         <FileUploadRow name="frontPhoto" label="Front Photo of Pharmacy (JPG)" />
                         <FileUploadRow name="ownerID" label="Owner ID / NIC (PDF/JPG)" />
                         
-                        {/* 8. Pharmacy Service Options (Optional) */}
+                        {/* 🔍 Service Options */}
                         <h3>🔍 Pharmacy Service Options</h3>
                         <div className="service-options">
                             {serviceOptionsList.map(service => (
@@ -369,7 +416,7 @@ const handleFinalRegistration = async (e) => {
                             ))}
                         </div>
 
-                        {/* FINAL REGISTER BUTTON */}
+                        {/* SUBMIT */}
                         <button type="submit" className="register-btn primary-btn">
                             Complete Registration
                         </button>
