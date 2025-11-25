@@ -6,13 +6,13 @@ import '../RegistrationFormsCommon.css';
 import GoogleIcon from '../assets/google.png'; 
 import API from "../api/api";
 
-// IMPORT LOGIN MODAL
+
 import { LoginModal } from "../Components/UI/LoginModal";
 
 const PatientRegistrationPage = () => {
   const navigate = useNavigate();
 
-  // ⭐ ADD THIS
+
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -81,7 +81,7 @@ const PatientRegistrationPage = () => {
       console.error(" Registration Step1 Error:", err);
 
       if (err.response) {
-        alert("Backend error: " + err.response.data.error);
+        alert("Error: " + err.response.data.error);
       } else {
         alert("Failed to connect to backend. Check console.");
       }
@@ -189,11 +189,11 @@ const PatientRegistrationPage = () => {
             </div>
 
             <div id="googleBtn" style={{ marginTop: "10px" }}>
-              <button type="button" className="google-sign-in" onClick={handleGoogleSignIn}>
-                <img src={GoogleIcon} alt="Google" />
-                Sign in with Google
-              </button>
-            </div>
+                          <button type="button" className="google-sign-in" onClick={handleGoogleSignIn}>
+                            <img src={GoogleIcon} alt="Google" />
+                            Sign in with Google
+                          </button>
+                        </div>
 
             {/* ⭐ FIXED SIGN-IN CLICK */}
             <p className="login-link">

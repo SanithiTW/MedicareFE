@@ -131,3 +131,54 @@
     text-decoration: none;
     font-weight: bold;
 }
+
+/* --- Signup Role Dropdown --- */
+.signup-dropdown {
+    margin-top: 10px;
+    background: #F8F8F8;
+    border: 1px solid #D9D9D9;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Shared button style */
+.signup-dropdown button {
+    padding: 10px 15px;
+    background: #FFFFFF;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0C9A26;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Divider line between buttons */
+.signup-dropdown button:not(:last-child) {
+    border-bottom: 1px solid #E0E0E0;
+}
+
+/* Hover effect */
+.signup-dropdown button:hover {
+    background-color: #0C9A26;
+    color: #FFFFFF;
+}
+
+/* Smooth appearance animation */
+.signup-dropdown {
+    animation: fadeInSignup 0.2s ease-in-out;
+}
+
+@keyframes fadeInSignup {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

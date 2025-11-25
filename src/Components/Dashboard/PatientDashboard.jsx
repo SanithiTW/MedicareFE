@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // NEW: for logout navigation
 import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
 
@@ -16,6 +17,9 @@ export default function PatientDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const containerRef = useRef();
   const chatWrapperRef = useRef(); // Ref for chat bubble + panel
+
+  // NEW: Initialize useNavigate
+  const navigate = useNavigate();
 
   // Smooth appear animation
   useEffect(() => {
@@ -39,6 +43,13 @@ export default function PatientDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [chatOpen]);
 
+  // NEW: Logout handler
+  const handleLogout = () => {
+    // Optionally clear user session or local storage here
+    // localStorage.removeItem('userToken'); 
+    navigate("/"); // Redirect to landing page or login page
+  };
+
   return (
     <div className="pd-root" ref={containerRef}>
       {/* Header */}
@@ -55,7 +66,10 @@ export default function PatientDashboard() {
         </div>
 
         <div className="pd-header-right">
-          <button className="pd-btn-text">Log Out</button>
+          {/* UPDATED: Logout Button */}
+          <button className="pd-btn-text" onClick={handleLogout}>
+            Log Out
+          </button>
           <img src={BellImg} alt="bell" className="pd-icon small" />
           <img src={UserImg} alt="user" className="pd-user" />
         </div>

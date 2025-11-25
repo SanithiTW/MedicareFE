@@ -155,6 +155,8 @@ const LandingPage = () => {
         cssEase: "linear"
     };
 
+    
+
     return (
         <div className="landing-page">
             <LoginModal 
