@@ -1,0 +1,339 @@
+/* Color Palette:
+   --color-dark-green: #07741B;
+   --color-light-green-bg: #BCFFC6; 
+   --color-bright-green: #18D23A; 
+   --color-white: #FFFFFF;
+   --color-grey-border: #D9D9D9; 
+   --color-red: #EC1414; 
+*/
+
+.patient-profile-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-light-green-bg); /* BCFFC6 */
+    font-family: Arial, sans-serif;
+    padding: 0;
+}
+
+/* --- 1. Shared Header Styles (Copied from Dashboard) --- */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-white); 
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo-img {
+    height: 40px;
+    width: auto;
+    margin-right: 15px;
+}
+
+.header-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-dark-green); /* 07741B */
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.notification-bell,
+.profile-icon {
+    height: 24px;
+    cursor: pointer;
+}
+
+.logout-text {
+    color: #555;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* --- 2. Main Content and Layout --- */
+.profile-main-content {
+    background-color: var(--color-white); /* FFFFFF */
+    margin: 20px;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex-grow: 1;
+}
+
+h3 {
+    color: var(--color-dark-green); /* 07741B */
+    border-bottom: 2px solid var(--color-light-green-bg);
+    padding-bottom: 5px;
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.profile-section {
+    padding: 15px;
+    border: 1px solid var(--color-grey-border); /* D9D9D9 */
+    border-radius: 8px;
+}
+
+/* --- 3. Profile Header Card --- */
+.profile-header-card {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-grey-border);
+    margin-bottom: 20px;
+}
+
+.profile-photo-placeholder {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 3px solid var(--color-bright-green);
+}
+
+.profile-photo-placeholder img {
+    width: 60%;
+    height: 60%;
+    object-fit: contain;
+}
+
+.upload-photo-btn, .change-password-btn {
+    padding: 8px 15px;
+    border: 1px solid var(--color-dark-green);
+    background-color: var(--color-white);
+    color: var(--color-dark-green);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.change-password-btn {
+    background-color: var(--color-dark-green); /* Dark green for prominence */
+    color: var(--color-white);
+    border: none;
+}
+
+.change-password-btn:hover {
+    background-color: #055f15;
+}
+
+.welcome-info h2 {
+    color: var(--color-dark-green);
+    margin-top: 0;
+}
+
+/* --- 4. Info Fields and Editing --- */
+.profile-info-field {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--color-grey-border);
+}
+
+.profile-info-field:last-of-type {
+    border-bottom: none;
+}
+
+.profile-info-field label {
+    flex: 0 0 180px; /* Fixed width for labels */
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+}
+
+.profile-info-field p, .profile-info-field input {
+    flex-grow: 1;
+    margin: 0;
+    font-size: 15px;
+    color: #333;
+}
+
+.edit-input {
+    padding: 5px 8px;
+    border: 1px solid var(--color-bright-green);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+}
+
+.edit-btn img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover img {
+    opacity: 1;
+}
+
+.save-btn {
+    background-color: var(--color-bright-green); /* 18D23A */
+    color: var(--color-white);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+/* --- 5. Family Member Section --- */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-member-btn {
+    background-color: var(--color-dark-green);
+    color: var(--color-white);
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.add-icon {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1); /* Change to white for dark background */
+}
+
+.family-members-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.member-card {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 5px solid var(--color-bright-green);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.member-details h4 {
+    margin: 0 0 5px 0;
+    color: var(--color-dark-green);
+}
+
+.member-details p, .member-details small {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.member-actions .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.member-actions img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+}
+
+.member-actions .delete-btn img {
+    filter: drop-shadow(1px 1px 0 var(--color-red));
+}
+
+/* --- 6. Document Section --- */
+.upload-label {
+    background-color: var(--color-bright-green); /* 18D23A */
+    color: var(--color-white);
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.upload-icon {
+    width: 16px;
+    height: 16px;
+    filter: brightness(0) invert(1);
+}
+
+.document-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.document-table th, .document-table td {
+    border: 1px solid var(--color-grey-border);
+    padding: 10px;
+    text-align: left;
+}
+
+.document-table th {
+    background-color: var(--color-light-green-bg); /* BCFFC6 */
+    color: var(--color-dark-green);
+    font-weight: 600;
+}
+
+.doc-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.action-view {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+}
+
+.action-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}

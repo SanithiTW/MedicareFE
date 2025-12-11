@@ -9,6 +9,8 @@ import UserIcon from '../../assets/user.png';
 // --- New Assets for KPIs ---
 import HospitalIcon from '../../assets/HospitalIcon.png'; // Used for Pharmacies
 import DoctorIcon from '../../assets/Doctor.png';   // Used for Doctors
+import { useNavigate } from 'react-router-dom';
+
 
 // --- Mock Data ---
 const kpis = [
@@ -48,16 +50,22 @@ const ordersData = [
 
 
 const AdminDashboard = () => {
+    const navigate = useNavigate();
+
     const [activeTab, setActiveTab] = useState('home');
 
     const adminNavLinks = [
-        { id: 'home', label: '1. Overview', onClick: () => setActiveTab('home') },
-        { id: 'approvals', label: '2. Approvals & Verification', onClick: () => setActiveTab('approvals') },
-        { id: 'pharmacy', label: '3. Pharmacy Management', onClick: () => setActiveTab('pharmacy') },
-        { id: 'doctor', label: '4. Doctor Management', onClick: () => setActiveTab('doctor') },
-        { id: 'patient', label: '5. Patient Management', onClick: () => setActiveTab('patient') },
-        { id: 'orders', label: '6. Orders & Transactions', onClick: () => setActiveTab('orders') },
+        { id: 'home', label: 'Overview', onClick: () => setActiveTab('home') },
+        { id: 'approvals', label: 'Approvals & Verification', onClick: () => setActiveTab('approvals') },
+        { id: 'pharmacy', label: 'Pharmacy Management', onClick: () => setActiveTab('pharmacy') },
+        { id: 'doctor', label: 'Doctor Management', onClick: () => setActiveTab('doctor') },
+        { id: 'patient', label: 'Patient Management', onClick: () => setActiveTab('patient') },
+        { id: 'orders', label: 'Orders & Transactions', onClick: () => setActiveTab('orders') },
     ];
+
+     const handleLogout = () => {
+        navigate("/");  
+    };
 
     // --- Layout Component Logic (Adapted from Patient Design) ---
     const DashboardLayout = ({ title, subtitle, navLinks, children }) => (
@@ -69,7 +77,9 @@ const AdminDashboard = () => {
                 </div>
                 <div className="header-right">
                     <img src={BellIcon} alt="Notifications" className="notification-bell" />
-                    <span className="logout-text">Log Out</span>
+                    <button className="pd-btn-text" onClick={handleLogout}>
+            Log Out
+          </button>
                     <img src={UserIcon} alt="Profile" className="profile-icon" />
                 </div>
             </div>

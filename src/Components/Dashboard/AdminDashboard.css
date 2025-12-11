@@ -1,162 +1,266 @@
-/* src/DashboardCommon.css */
+/* src/AdminDashboard.css - REVISED */
 
+/* --- Color Variables --- */
 :root {
-    --primary-green: #18D23A;
-    --dark-green: #07741B;
-    --light-green: #BCFFC6;
-    --white: #FFFFFF;
-    --black: #000000;
-    --gray-light: #D9D9D9;
-    --blue-highlight: #96A1FF; /* Used for interactive elements/links */
-    --red-alert: #EC1414;
+    --color-dark-green: #07741B;    /* Primary: Deep Green */
+    --color-medium-green: #18D23A;  /* Secondary: Bright Green */
+    --color-light-green: #BCFFC6;   /* Background Accent: Pale Green */
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-red: #EC1414;           /* Alert/Danger: Red */
+    --color-gray: #D9D9D9;          /* Border/Separator: Light Gray */
+    --color-accent-blue: #96A1FF;   /* Accent: Light Blue/Purple */
+    
+    /* New Status Colors */
+    --status-verified: var(--color-dark-green);
+    --status-pending: #FFA500; /* Orange */
+    --status-new: #1e90ff;     /* Dodger Blue */
+    --status-re-verify: #FFD700; /* Gold */
+    --status-delivered: var(--color-dark-green);
+    --status-processing: #1e90ff;
+    --status-paid: var(--color-medium-green);
 }
 
-/* --- 1. Global Layout --- */
-.dashboard-container {
+/* --- Base Layout --- */
+.admin-dashboard-container {
     display: flex;
+    flex-direction: column;
     min-height: 100vh;
-    background-color: #f7f7f7; /* Light background for the overall page */
+    background-color: var(--color-light-green); /* BCFFC6 */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* --- 2. Header / Top Navigation --- */
+/* --- Top Header Bar --- */
 .dashboard-header {
-    background-color: var(--white);
-    padding: 10px 30px;
-    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--gray-light);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 10px 30px;
+    background-color: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
-.logo-container img {
-    height: 35px;
-    width: auto;
+.header-left { display: flex; align-items: center; }
+
+/* 🚀 FIX: Increased Logo Size here (from 40px to 50px) */
+.header-logo-img { 
+    width: 50px; 
+    height: 50px; 
+    margin-right: 10px; 
 }
 
-.header-controls {
+.header-title { font-size: 1.5rem; font-weight: 700; color: var(--color-dark-green); }
+.header-right { display: flex; align-items: center; gap: 20px; }
+.notification-bell, .profile-icon { width: 24px; height: 24px; cursor: pointer; }
+.logout-text { color: #555; cursor: pointer; font-size: 0.9rem; }
+
+
+/* --- Navigation Bar (Green Strip below header) --- */
+.dashboard-nav {
+    background-color: var(--color-medium-green); /* 18D23A */
     display: flex;
-    align-items: center;
-    gap: 20px;
+    justify-content: space-around;
+    padding: 0 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.search-bar {
-    padding: 8px 15px;
-    border: 1px solid var(--gray-light);
-    border-radius: 25px;
-    width: 300px;
-    outline: none;
-    font-size: 0.9rem;
-    background-color: var(--white);
-    transition: all 0.2s;
-}
-
-.icon-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-}
-
-.icon-button img {
-    height: 24px;
-    width: 24px;
-}
-
-.user-avatar {
-    height: 35px;
-    width: 35px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--primary-green);
-    cursor: pointer;
-}
-
-/* --- 3. Main Content Wrapper --- */
-.main-content-wrapper {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.dashboard-content {
-    flex-grow: 1;
-    padding: 20px;
-}
-
-/* --- 4. Navigation Panel (Green Bar) --- */
-.top-nav-panel {
-    background-color: var(--primary-green);
-    display: flex;
-    padding: 0 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.nav-item {
-    color: var(--white);
-    padding: 12px 20px;
+.nav-link {
+    color: var(--color-white);
+    padding: 15px 20px;
     text-decoration: none;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    transition: background-color 0.3s, border-bottom 0.3s;
     cursor: pointer;
+    border-bottom: 3px solid transparent;
 }
 
-.nav-item:hover,
-.nav-item.active {
-    background-color: var(--dark-green);
+.nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid var(--color-dark-green);
 }
 
+.nav-link.active {
+    background-color: var(--color-dark-green); /* 07741B */
+    border-bottom: 3px solid var(--color-white);
+}
 
-/* --- 5. Card Components --- */
-.kpi-cards-grid {
+/* --- Main Content Area --- */
+.dashboard-main-content {
+    padding: 30px;
+    flex-grow: 1;
+}
+
+.welcome-section {
+    margin-bottom: 30px;
+    color: var(--color-dark-green);
+}
+
+.welcome-section h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    border-bottom: 3px solid var(--color-medium-green);
+    padding-bottom: 5px;
+}
+
+.subtitle {
+    font-size: 1.0rem;
+    font-weight: 400;
+    color: #666;
+}
+
+/* --- Card Grid Layout (KPIs) --- */
+.card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
     margin-bottom: 30px;
 }
 
-.kpi-card {
-    background-color: var(--white);
+.card {
+    background-color: var(--color-white);
     border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    border-left: 5px solid var(--primary-green);
     display: flex;
     flex-direction: column;
+    border-left: 5px solid; /* Use style prop for color */
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    display: flex;
     justify-content: space-between;
-    min-height: 100px;
+    align-items: flex-start;
+    margin-bottom: 10px;
 }
 
-.kpi-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 0.9rem;
-    color: #555;
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #555; /* Neutral color, specific color added in JS via style prop */
 }
 
-.kpi-card .value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--dark-green);
+.card-icon {
+    width: 30px;
+    height: 30px;
+    opacity: 0.7;
 }
 
-.section-title {
-    font-size: 1.5rem;
-    color: var(--dark-green);
-    margin: 0 0 20px 0;
-    padding-bottom: 5px;
-    border-bottom: 2px solid var(--light-green);
+.card-content h3 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-dark-green); /* Default value */
 }
 
-.data-table-container {
-    background-color: var(--white);
+
+/* --- List/Table Section --- */
+.list-section, .table-section {
+    background-color: var(--color-white);
     border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    margin-bottom: 20px;
-    overflow-x: auto;
+    margin-bottom: 30px;
 }
 
+.list-section h2, .table-section h2 {
+    font-size: 1.6rem;
+    color: var(--color-dark-green);
+    margin-top: 0;
+}
+
+.list-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--color-light-green);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.list-section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-dark-green);
+    margin: 0;
+}
+
+.view-details-btn, .add-btn {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+    padding: 8px 15px;
+    border: none;
+    border-radius: 25px; /* Pill shape for action buttons */
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-details-btn:hover, .add-btn:hover {
+    background-color: var(--color-dark-green);
+    transform: translateY(-1px);
+}
+
+/* --- List Items (Approvals/Quick View) --- */
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.list-item:hover {
+    background-color: var(--color-light-green);
+    padding: 12px 10px;
+    margin: 0 -10px;
+    border-radius: 5px;
+    transition: all 0.2s;
+}
+
+.list-item:last-child { border-bottom: none; }
+
+.item-details p {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-dark-green);
+}
+
+.item-details small {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+/* --- Status Tags for List Items --- */
+.status-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.status-new { 
+    background-color: var(--status-new); 
+    color: var(--color-white); 
+}
+
+.status-re-verify { 
+    background-color: var(--status-re-verify); 
+    color: var(--color-black); 
+}
+
+/* --- Table Styles --- */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -165,71 +269,84 @@
 .data-table th, .data-table td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid var(--gray-light);
-    font-size: 0.9rem;
+    border-bottom: 1px solid var(--color-gray);
+    font-size: 0.95rem;
 }
 
 .data-table th {
-    background-color: var(--light-green);
-    color: var(--dark-green);
-    font-weight: 600;
+    background-color: var(--color-light-green) !important; /* BCFFC6 */
+    color: var(--color-dark-green);
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .data-table tr:hover {
-    background-color: #f9f9f9;
+    background-color: #f0fff0;
 }
 
-/* Status Badges */
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 0.8rem;
+/* --- Status Text in Tables --- */
+.status-text {
     font-weight: 600;
-    display: inline-block;
+    text-transform: capitalize;
 }
 
-.status-approved {
-    background-color: var(--primary-green);
-    color: var(--white);
-}
+.status-text.status-verified { color: var(--status-verified); }
+.status-text.status-pending { color: var(--status-pending); }
+.status-text.status-paid { color: var(--status-paid); }
+.status-text.status-delivered { color: var(--status-delivered); }
+.status-text.status-processing { color: var(--status-processing); }
 
-.status-pending {
-    background-color: #ffc107;
-    color: var(--black);
-}
 
-.status-rejected, .status-low {
-    background-color: var(--red-alert);
-    color: var(--white);
-}
-
-/* Action Buttons */
+/* --- Action Buttons in Tables/Lists --- */
 .action-btn {
-    background-color: var(--primary-green);
-    color: var(--white);
+    padding: 7px 12px;
+    margin-left: 5px;
     border: none;
-    padding: 6px 12px;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 0.85rem;
-    margin-right: 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
     transition: background-color 0.2s;
 }
 
 .action-btn:hover {
-    background-color: var(--dark-green);
+    opacity: 0.9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.edit-btn {
-    background-color: var(--blue-highlight);
-}
-.edit-btn:hover {
-    background-color: #5d67e2;
+.action-approve {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
 }
 
-.delete-btn {
-    background-color: var(--red-alert);
+.action-reject {
+    background-color: var(--color-red);
+    color: var(--color-white);
 }
-.delete-btn:hover {
-    background-color: #a30000;
+
+.action-view {
+    background-color: var(--color-accent-blue);
+    color: var(--color-white);
+}
+.action-suspend {
+    background-color: var(--color-black);
+    color: var(--color-white);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .dashboard-nav {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    .nav-link {
+        padding: 10px 15px;
+    }
+    .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .data-table th, .data-table td {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
 }
