@@ -29,31 +29,42 @@ export const LoginModal = ({ isOpen, onClose }) => {
 
   // -------------------- Email/Password Login --------------------
   const handleEmailLogin = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!email || !password) {
-      alert("Please enter both email and password");
+  if (!email || !password) {
+    alert("Please enter both email and password");
+    return;
+  }
+
+  try {
+    const res = await API.post("/../login/email", { email, password });
+    const { uid, role } = res.data;
+
+    if (!uid) {
+      alert("Invalid login response from backend");
       return;
     }
 
-    try {
-      const res = await API.post("/../login/email", { email, password });
-      const { uid, role } = res.data;
+    localStorage.setItem("user_uid", uid);
+    localStorage.setItem("user_role", role || "Patient");
 
-      if (!uid) {
-        alert("Invalid login response from backend");
-        return;
-      }
-
-      localStorage.setItem("user_uid", uid);
-      localStorage.setItem("user_role", role || "Patient");
-
+    // Role-based navigation
+    if (role === "Admin") {
+      navigate("/AdminDashboard");
+    } else if (role === "Doctor") {
+      navigate("/DoctorDashboard");
+    } else if (role === "Pharmacy") {
+      navigate("/PharmacyDashboard");
+    } else {
       navigate("/PatientDashboard");
-    } catch (err) {
-      console.error("Email login error:", err);
-      alert(err.response?.data?.error || "Failed to login");
     }
-  };
+
+  } catch (err) {
+    console.error("Email login error:", err);
+    alert(err.response?.data?.error || "Failed to login");
+  }
+};
+
 
   // -------------------- Google Sign-In --------------------
   const handleGoogleSignIn = () => {
