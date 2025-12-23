@@ -5,6 +5,10 @@ import Logo from '../../assets/Logo.jpeg';
 import GoogleIcon from '../../assets/google.png'; 
 import API from '../../api/api';
 
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../Firebase";
+
+
 export const LoginModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
 
@@ -14,6 +18,10 @@ export const LoginModal = ({ isOpen, onClose }) => {
   // ---------------- Role Dropdown ----------------
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const signupRef = useRef(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+const [googleLoading, setGoogleLoading] = useState(false);
+
+
 
   useEffect(() => {
     // Load Google Identity Services script
@@ -36,76 +44,60 @@ export const LoginModal = ({ isOpen, onClose }) => {
     return;
   }
 
+  setEmailLoading(true);
+
   try {
     const res = await API.post("/../login/email", { email, password });
     const { uid, role } = res.data;
 
-    if (!uid) {
-      alert("Invalid login response from backend");
-      return;
-    }
+    if (!uid) throw new Error("Invalid login response");
 
-    localStorage.setItem("user_uid", uid);
-    localStorage.setItem("user_role", role || "Patient");
+    await signInWithEmailAndPassword(auth, email, password);
 
-    // Role-based navigation
-    if (role === "Admin") {
-      navigate("/AdminDashboard");
-    } else if (role === "Doctor") {
-      navigate("/DoctorDashboard");
-    } else if (role === "Pharmacy") {
-      navigate("/PharmacyDashboard");
-    } else {
-      navigate("/PatientDashboard");
-    }
+    localStorage.setItem("auth_uid", uid);
+    localStorage.setItem("auth_role", role || "Patient");
+
+    if (role === "Admin") navigate("/AdminDashboard");
+    else if (role === "Doctor") navigate("/DoctorDashboard");
+    else if (role === "Pharmacy") navigate("/PharmacyDashboard");
+    else navigate("/PatientDashboard");
 
   } catch (err) {
-    console.error("Email login error:", err);
+    console.error(err);
     alert(err.response?.data?.error || "Failed to login");
+    setEmailLoading(false);
   }
 };
 
 
   // -------------------- Google Sign-In --------------------
-  const handleGoogleSignIn = () => {
-    if (!window.google) {
-      alert("Google API not loaded");
-      return;
-    }
+  const handleGoogleSignIn = async () => {
+  setGoogleLoading(true);
 
-    window.google.accounts.id.initialize({
-      client_id: "1080448394290-dk4th5n17iljbv4fco2v9kaf2j8t73as.apps.googleusercontent.com",
-      callback: async (response) => {
-        const idToken = response.credential;
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
 
-        if (!idToken) {
-          alert("No token received");
-          return;
-        }
+    const user = result.user;
 
-        try {
-          const res = await API.post("/patient/google", { idToken });
-          const uid = res.data.uid;
-          localStorage.setItem("patient_uid", uid);
-
-          navigate("/PatientDashboard", {
-            state: { userData: { role: "Patient" } }
-          });
-        } catch (err) {
-          alert("Backend error: " + (err.response?.data?.error || err.message));
-        }
-      },
+    await API.post("/patient/google", {
+      uid: user.uid,
+      email: user.email,
+      name: user.displayName
     });
 
-    window.google.accounts.id.renderButton(
-      document.getElementById("googleBtn"),
-      {
-        theme: "outline",
-        size: "large",
-        text: "continue_with",
-      }
-    );
-  };
+    localStorage.setItem("auth_uid", user.uid);
+    localStorage.setItem("auth_role", "Patient");
+
+    navigate("/PatientDashboard");
+
+  } catch (err) {
+    console.error(err);
+    alert("Google login failed");
+    setGoogleLoading(false);
+  }
+};
+
 
   // -------------------- Role Selection --------------------
   const handleRoleSelect = (role) => {
@@ -146,15 +138,29 @@ export const LoginModal = ({ isOpen, onClose }) => {
             onChange={(e) => setPassword(e.target.value)} 
             required 
           />
-          <button type="submit" className="sign-in-button">Sign In</button>
+          <button
+  type="submit"
+  className="sign-in-button"
+  disabled={emailLoading || googleLoading}
+>
+  {emailLoading ? "Signing in..." : "Sign In"}
+</button>
+
 
           <div className="separator"><span>or</span></div>
 
           <div id="googleBtn" style={{ marginTop: "10px" }}>
-            <button type="button" className="google-sign-in" onClick={handleGoogleSignIn}>
-              <img src={GoogleIcon} alt="Google" />
-              Sign in with Google
-            </button>
+           <button
+  type="button"
+  className="google-sign-in"
+  onClick={handleGoogleSignIn}
+  disabled={emailLoading || googleLoading}
+>
+  <img src={GoogleIcon} alt="Google" />
+  {googleLoading ? "Signing in..." : "Sign in with Google"}
+</button>
+
+
           </div>
 
           <p className="signup-link">

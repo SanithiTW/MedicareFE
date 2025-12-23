@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // NEW: for logout navigation
+import { useNavigate } from "react-router-dom";
 import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
+
+
+// 🔹 Firebase
+import { ref, get } from "firebase/database";
+import { database } from "../../Firebase"; 
+
 
 import Logo from "../../assets/Logo.jpeg";
 import UserImg from "../../assets/user.png";
@@ -16,10 +22,41 @@ import DelivaryImg from "../../assets/delivary.png";
 export default function PatientDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const containerRef = useRef();
-  const chatWrapperRef = useRef(); // Ref for chat bubble + panel
-
-  // NEW: Initialize useNavigate
+  const chatWrapperRef = useRef(); 
+  const [profilePhoto, setProfilePhoto] = useState(null); // 👈 NEW
   const navigate = useNavigate();
+
+  useEffect(() => {
+  const uid = localStorage.getItem("auth_uid");
+  const role = localStorage.getItem("auth_role");
+
+  if (!uid || role !== "Patient") {
+    navigate("/"); // go back to login page
+  }
+}, [navigate]);
+
+
+  console.log("Loaded profile photo URL:", profilePhoto);
+
+  useEffect(() => {
+  const uid = localStorage.getItem("auth_uid");
+
+  if (!uid) return;
+
+  const profileRef = ref(database, `patients/${uid}/profile`);
+
+  get(profileRef)
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data.profilePhoto) {
+          setProfilePhoto(data.profilePhoto); // Supabase URL
+        }
+      }
+    })
+    .catch((err) => console.error("Profile load error:", err));
+}, []);
+
 
   // Smooth appear animation
   useEffect(() => {
@@ -44,11 +81,12 @@ export default function PatientDashboard() {
   }, [chatOpen]);
 
   // NEW: Logout handler
-  const handleLogout = () => {
-    // Optionally clear user session or local storage here
-    // localStorage.removeItem('userToken'); 
-    navigate("/"); // Redirect to landing page or login page
-  };
+ const handleLogout = () => {
+  localStorage.removeItem("auth_uid");
+  localStorage.removeItem("auth_role");
+  navigate("/");
+};
+
 
   return (
     <div className="pd-root" ref={containerRef}>
@@ -71,7 +109,20 @@ export default function PatientDashboard() {
             Log Out
           </button>
           <img src={BellImg} alt="bell" className="pd-icon small" />
-          <img src={UserImg} alt="user" className="pd-user" />
+          <img
+  src={profilePhoto || UserImg}
+  alt="user"
+  className="pd-user clickable"
+  crossOrigin="anonymous"
+  referrerPolicy="no-referrer"
+  onError={(e) => {
+    console.error("Image load failed:", profilePhoto);
+    e.target.src = UserImg;
+  }}
+  onClick={() => navigate("/patientProfile")}
+/>
+
+
         </div>
       </header>
 

@@ -57,8 +57,9 @@
   color: var(--deep-green);
 }
 .pd-brand-sub {
-  font-size: 13px;
-  color: #757575;
+  font-size: 24px;
+    font-weight: bold;
+    color: var(--color-dark-green);
 }
 .pd-search {
   min-width: 420px;
@@ -93,6 +94,22 @@
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
+  opacity: 0;
+  animation: fadeAvatar 0.3s ease forwards;
+  background: var(--light-green);
+  cursor: pointer;              /* shows it is clickable */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@keyframes fadeAvatar {
+  to {
+    opacity: 1;
+  }
+}
+
+.pd-user:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Center navbar */

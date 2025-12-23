@@ -1,5 +1,3 @@
-// src/Pages/PharmacyDetailsCollection.jsx
-
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
@@ -184,7 +182,6 @@ const PharmacyDetailsCollectionPage = () => {
                     <h3>Pharmacy Detail Collection</h3>
 
                     <form onSubmit={handleFinalRegistration}>
-                        
                         {/* ✔ 1. Identity */}
                         <h3 style={{ marginBottom: '15px' }}>✅ Business Identity</h3>
                         

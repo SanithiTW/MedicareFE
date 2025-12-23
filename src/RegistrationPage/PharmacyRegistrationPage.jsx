@@ -1,5 +1,3 @@
-// src/Pages/PharmacyRegistrationPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg'; 
@@ -8,7 +6,7 @@ import '../RegistrationFormsCommon.css';
 import API from "../api/api";
 
 // ⭐ IMPORT LOGIN MODAL
-import { LoginModal } from "../Components/UI/LoginModal";
+import { LoginModal } from "../Components/models/LoginModal";
 
 const PharmacyRegistrationPage = () => {
     const navigate = useNavigate();
