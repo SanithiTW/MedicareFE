@@ -1,140 +1,367 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './PatientProfile.css';
+import Logo from '../assets/Logo.jpeg';
+import BellIcon from '../assets/Bell.png';
+import UserIcon from '../assets/user.png';
+import HomeIcon from '../assets/Home.png';
 
-// --- Assets ---
-// NOTE: Please ensure these paths are correct relative to PatientProfile.jsx
-import Logo from '../../assets/Logo.jpeg'; 
-import BellIcon from '../../assets/Bell.png'; 
-import UserIcon from '../../assets/user.png'; 
-import PencilIcon from '../../assets/pencil.png'; // Used for edit buttons
-import UploadIcon from '../../assets/upload.png'; // Used for report uploads
-import DeleteIcon from '../../assets/delete.png'; // Used for delete actions
-import AddIcon from '../../assets/add.png';       // Used for adding family members
-
-// --- Mock Data ---
-const initialPatientData = {
-    fullName: 'Kamal Perera',
-    email: 'kamal.perera@mail.com',
-    phone: '077-123-4567',
-    street: '123, Galle Road',
-    city: 'Colombo 03',
-    district: 'Colombo',
-    postalCode: '00300',
-    dob: '1990-05-15',
-    gender: 'Male',
-    nic: '901351234V',
-    bloodGroup: 'O+',
-    conditions: 'Mild Hypertension, Seasonal Allergies',
-    allergies: 'Penicillin, Dust',
-    chronicDiseases: 'BP',
-    currentMedications: 'Amlodipine (5mg)',
-    alternativeContact: '071-987-6543',
-};
-
-const initialFamilyMembers = [
-    { id: 1, name: 'Samanthi Perera', dob: '1992-08-20', bloodGroup: 'A+', conditions: 'None', allergies: 'Pollen' },
-    { id: 2, name: 'Nimal Perera', dob: '2018-03-10', bloodGroup: 'B-', conditions: 'Asthma', allergies: 'Dust Mites' },
-];
-
-const initialDocuments = [
-    { id: 1, name: 'Blood Test Report - Nov 2025', date: '2025-11-20', member: 'Kamal Perera' },
-    { id: 2, name: 'Doctor Prescription - Oct 2025', date: '2025-10-01', member: 'Nimal Perera' },
-];
-
+import { useNavigate } from 'react-router-dom';
+import { signOut } from "firebase/auth";
+import { ref, get, update, set } from 'firebase/database';
+import { auth, database } from '../../Firebase';
+import { supabase } from "../supabase"; 
 
 const PatientProfile = () => {
-    // State for main patient data
-    const [patientData, setPatientData] = useState(initialPatientData);
-    // State for family members
-    const [familyMembers, setFamilyMembers] = useState(initialFamilyMembers);
-    // State for documents
-    const [documents, setDocuments] = useState(initialDocuments);
-    // State to track which section is being edited (e.g., 'basic', 'address', 'health')
-    const [editMode, setEditMode] = useState(null); 
+    const [patientData, setPatientData] = useState(null);
+    const [familyMembers, setFamilyMembers] = useState([]);
+    const [documents, setDocuments] = useState([]);
+    const [editMode, setEditMode] = useState(null);
+    const [documentUploadMember, setDocumentUploadMember] = useState('');
+    const [isMemberEditOpen, setIsMemberEditOpen] = useState(false);
+    const [editingMember, setEditingMember] = useState(null);
+    const [extraDetails, setExtraDetails] = useState([]);
+    const navigate = useNavigate();
 
-    // General handler for form field changes
-    const handleChange = (e, section) => {
+    const [selectedDocument, setSelectedDocument] = useState(null);
+    const [documentPreviewUrl, setDocumentPreviewUrl] = useState(null);
+    const [documentCategory, setDocumentCategory] = useState("report");
+
+    const [showAddMember, setShowAddMember] = useState(false);
+    const [newMember, setNewMember] = useState({
+      name: "",
+      relationship: "",
+      dob: "",
+      bloodGroup: "",
+      conditions: "",
+      allergies: "",
+      chronicDiseases: "",
+      currentMedications: "",
+      photo: ""
+    });
+
+    const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
+    const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+
+    // Load user data
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+
+            const uid = user.uid;
+            const snapshot = await get(ref(database, `patients/${uid}/profile`));
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                setPatientData({
+                    profilePhoto: data.profilePhoto || '',
+                    fullName: data.name || user.displayName || '',
+                    email: data.email || user.email || '',
+                    phone: data.phone || '',
+                    street: data.street || '',
+                    city: data.city || '',
+                    district: data.district || '',
+                    postalCode: data.postalCode || '',
+                    dob: data.dob || '',
+                    gender: data.gender || '',
+                    nic: data.nic || '',
+                    bloodGroup: data.bloodGroup || '',
+                    conditions: data.conditions || '',
+                    allergies: data.allergies || '',
+                    chronicDiseases: data.chronicDiseases || '',
+                    currentMedications: data.currentMedications || '',
+                    alternativeContact: data.alternativeContact || '',
+                    description: data.description || '',
+                });
+                setExtraDetails(data.extraDetails || []);
+                setFamilyMembers(data.familyMembers || []);
+                setDocuments(data.documents || []);
+                setDocumentUploadMember(data.fullName || user.displayName || '');
+            } else {
+                setPatientData({
+                    fullName: user.displayName || '',
+                    email: user.email || ''
+                });
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleChange = (e, section, memberId = null) => {
         const { name, value } = e.target;
-        if (section === 'main') {
-            setPatientData({ ...patientData, [name]: value });
-        }
-        // Add logic for family member editing if needed
-    };
-
-    // Save handler
-    const handleSave = (section) => {
-        // Here you would typically call an API to save the data
-        console.log(`Saving ${section} data...`, patientData);
-        setEditMode(null); // Exit edit mode
-    };
-
-    // Delete family member handler
-    const handleDeleteMember = (id) => {
-        if (window.confirm("Are you sure you want to delete this family member?")) {
-            setFamilyMembers(familyMembers.filter(member => member.id !== id));
-            // API call to delete
+        if (section === 'main') setPatientData({ ...patientData, [name]: value });
+        else if (section === 'member') {
+            setFamilyMembers(familyMembers.map(m => m.id === memberId ? { ...m, [name]: value } : m));
         }
     };
 
-    // Delete document handler
-    const handleDeleteDocument = (id) => {
-        if (window.confirm("Are you sure you want to delete this document?")) {
-            setDocuments(documents.filter(doc => doc.id !== id));
-            // API call to delete
-        }
-    };
-
-    // Placeholder for document upload
-    const handleDocumentUpload = (e) => {
+    const handleProfilePhotoSelect = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            console.log("Uploading file:", file.name);
-            alert(`Document ${file.name} uploaded successfully! (Mock)`);
-            // Add to mock state for display
-            setDocuments([...documents, {
-                id: Date.now(),
-                name: file.name,
-                date: new Date().toISOString().slice(0, 10),
-                member: patientData.fullName, // Default to patient's name
-            }]);
-        }
+        if (!file) return;
+        setProfilePhotoFile(file);
+        setProfilePhotoPreview(URL.createObjectURL(file));
     };
 
+    const handleProfilePhotoSave = async () => {
+        if (!profilePhotoFile) return;
+        const uid = auth.currentUser.uid;
 
-    const renderInfoField = (label, name, value, isEditable = true, type = 'text') => (
-        <div className="profile-info-field" key={name}>
-            <label>{label}</label>
-            {isEditable && editMode === name ? (
-                <input
-                    type={type}
-                    name={name}
-                    value={value}
-                    onChange={(e) => handleChange(e, 'main')}
-                    className="edit-input"
-                />
-            ) : (
-                <p>{value || 'N/A'}</p>
-            )}
-            {isEditable && editMode !== name && (
-                <button 
-                    className="edit-btn" 
-                    onClick={() => setEditMode(name)}
-                >
-                    <img src={PencilIcon} alt="Edit" />
-                </button>
-            )}
-            {editMode === name && (
-                <button 
-                    className="save-btn" 
-                    onClick={() => handleSave(name)}
-                >
-                    Save
-                </button>
-            )}
+        // Delete existing photo if exists
+        if (patientData.profilePhoto) {
+            try {
+                const oldFile = patientData.profilePhoto.split('/').pop();
+                await supabase.storage.from('patient-profile-pics').remove([oldFile]);
+            } catch (err) { console.error("Failed to delete old profile photo", err); }
+        }
+
+        const path = `${uid}/profile-${Date.now()}`;
+        const { error } = await supabase.storage.from("patient-profile-pics").upload(path, profilePhotoFile, { upsert: true });
+        if (error) { alert("Upload failed"); return; }
+
+        const { data } = supabase.storage.from("patient-profile-pics").getPublicUrl(path);
+        await update(ref(database, `patients/${uid}/profile`), { profilePhoto: data.publicUrl });
+        setPatientData({ ...patientData, profilePhoto: data.publicUrl });
+        setProfilePhotoFile(null);
+        setProfilePhotoPreview(null);
+    };
+
+    const handleSave = async (section) => {
+        const uid = auth.currentUser.uid;
+        const userRef = ref(database, `patients/${uid}/profile`);
+        if (section === 'main') await update(userRef, patientData);
+        else if (section === 'family') await update(userRef, { familyMembers });
+        else if (section === 'extra') await update(userRef, { extraDetails });
+        setEditMode(null);
+        alert('Saved successfully!');
+    };
+
+    const handleDeleteMember = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this family member?")) return;
+        const updated = familyMembers.filter(m => m.id !== id);
+        setFamilyMembers(updated);
+        const uid = auth.currentUser.uid;
+        await update(ref(database, `patients/${uid}/profile`), { familyMembers: updated });
+    };
+
+    const handleDocumentSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const isPDF = file.type === "application/pdf";
+        const isImage = file.type.startsWith("image/");
+
+        if (!isPDF && !isImage) {
+            alert("Only PDF and image files are allowed");
+            return;
+        }
+
+        setSelectedDocument(file);
+        setDocumentPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleCancelDocumentUpload = () => {
+        setSelectedDocument(null);
+        setDocumentPreviewUrl(null);
+    };
+
+    const handleSaveDocument = async () => {
+        if (!selectedDocument) return;
+
+        const uid = auth.currentUser.uid;
+        const isPDF = selectedDocument.type === "application/pdf";
+        const folderName = isPDF ? "pdfs" : "images";
+
+        const safeName = selectedDocument.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+   const filePath = `${uid}/${folderName}/${Date.now()}-${safeName}`;
+
+const { error } = await supabase.storage
+  .from("medical_reports")
+  .upload(filePath, selectedDocument, {
+    upsert: true,
+    contentType: selectedDocument.type
+  });
+
+if (error) {
+  console.error("Upload failed:", error);
+  alert("Upload failed: " + error.message);
+  return;
+}
+
+const { data: urlData } = supabase.storage
+  .from("medical_reports")
+  .getPublicUrl(filePath);
+
+const newDoc = {
+  id: Date.now(),
+  name: selectedDocument.name,
+  path: filePath,                // ✅ STORAGE PATH
+  publicUrl: urlData.publicUrl,  // ✅ PUBLIC URL
+  type: isPDF ? "pdf" : "image",
+  date: new Date().toISOString().slice(0, 10),
+  member: documentUploadMember,
+  category: documentCategory
+};
+
+
+
+        const updatedDocs = [...documents, newDoc];
+        setDocuments(updatedDocs);
+        await update(ref(database, `patients/${uid}/profile`), { documents: updatedDocs });
+
+        setSelectedDocument(null);
+        setDocumentPreviewUrl(null);
+        alert("Document saved successfully");
+    };
+
+    const handleDeleteDocument = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this document?")) return;
+        const updated = documents.filter(d => d.id !== id);
+        setDocuments(updated);
+        const uid = auth.currentUser.uid;
+        await update(ref(database, `patients/${uid}/profile`), { documents: updated });
+    };
+
+    const handleViewDocument = (doc) => {
+  window.open(doc.publicUrl, "_blank");
+};
+
+
+    const handleLogout = async () => { await signOut(auth); localStorage.clear(); navigate("/"); };
+
+    const handleEditMember = (member) => { setEditingMember({ ...member }); setIsMemberEditOpen(true); };
+
+    const handleSaveExtraDetails = async () => { const uid = auth.currentUser.uid; await update(ref(database, `patients/${uid}/profile`), { extraDetails }); alert("Extra details saved successfully!"); };
+
+    const AddFamilyMemberModal = () => (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h3>Add Family Member</h3>
+                {newMember.photo && <img src={newMember.photo} alt="Preview" style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", marginBottom: "10px" }}/>}
+                <input className="edit-input" placeholder="Name" value={newMember.name} onChange={e => setNewMember(prev => ({ ...prev, name: e.target.value }))}/>
+                <input className="edit-input" placeholder="Relationship" value={newMember.relationship} onChange={e => setNewMember(prev => ({ ...prev, relationship: e.target.value }))}/>
+                <input type="date" className="edit-input" value={newMember.dob} onChange={e => setNewMember(prev => ({ ...prev, dob: e.target.value }))}/>
+                <input className="edit-input" placeholder="Blood Group" value={newMember.bloodGroup} onChange={e => setNewMember(prev => ({ ...prev, bloodGroup: e.target.value }))}/>
+                <textarea className="description-textarea" placeholder="Existing Conditions" value={newMember.conditions} onChange={e => setNewMember(prev => ({ ...prev, conditions: e.target.value }))}/>
+                <input type="file" accept="image/*" onChange={e => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = () => { setNewMember(prev => ({ ...prev, photo: reader.result })); }; reader.readAsDataURL(file); }}/>
+
+                <div className="modal-actions">
+                    <button className="save-btn" onClick={async () => {
+                        if(familyMembers.length >= 3){ alert("Maximum 3 members allowed"); return; }
+                        const uid = auth.currentUser.uid;
+                        let photoUrl = "";
+
+                        if (newMember.photo) {
+                            const fileName = `${uid}/family-${Date.now()}.jpg`;
+
+                            await supabase.storage
+                                .from("patient-profile-pics")
+                                .upload(fileName, await fetch(newMember.photo).then(r => r.blob()), {
+                                    upsert: true
+                                });
+
+                            photoUrl = supabase
+                                .storage
+                                .from("patient-profile-pics")
+                                .getPublicUrl(fileName).data.publicUrl;
+                        }
+
+                        const updated = [
+                            ...familyMembers,
+                            { ...newMember, id: Date.now(), photo: photoUrl }
+                        ];
+
+                        setFamilyMembers(updated);
+                        await set(ref(database, `patients/${uid}/profile/familyMembers`), updated);
+                        setShowAddMember(false);
+                        setNewMember({ name:"", relationship:"", dob:"", bloodGroup:"", conditions:"", allergies:"", chronicDiseases:"", currentMedications:"", photo:"" });
+                    }}>Save</button>
+                    <button className="cancel-btn" onClick={() => setShowAddMember(false)}>Cancel</button>
+                </div>
+            </div>
         </div>
     );
 
-    // --- Header Layout (Simplified) ---
+    // --- FamilyMemberModal remains unchanged ---
+    const FamilyMemberModal = ({ member, onClose }) => {
+        if (!member) return null;
+        const [localMember, setLocalMember] = useState({ ...member });
+        const handleFieldChange = (field, value) => setLocalMember(prev => ({ ...prev, [field]: value }));
+        const handleProfilePhotoChange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => setLocalMember(prev => ({ ...prev, photo: reader.result, newPhotoFile: file }));
+            reader.readAsDataURL(file);
+        };
+        const handleSaveEdit = async () => {
+            const uid = auth.currentUser.uid;
+            if (localMember.newPhotoFile && member.photo) {
+                try { const oldFile = member.photo.split('/').pop(); await supabase.storage.from("patient-profile-pics").remove([oldFile]); } 
+                catch (err) { console.error("Failed to delete old member photo:", err); }
+            }
+            let photoUrl = localMember.photo;
+            if (localMember.newPhotoFile) {
+                const fileName = `${uid}/family-${Date.now()}.jpg`;
+                await supabase.storage.from("patient-profile-pics").upload(fileName, localMember.newPhotoFile, { upsert: true });
+                photoUrl = supabase.storage.from("patient-profile-pics").getPublicUrl(fileName).data.publicUrl;
+            }
+            const updatedMembers = familyMembers.map(m => m.id === localMember.id ? { ...localMember, photo: photoUrl } : m);
+            setFamilyMembers(updatedMembers);
+            await update(ref(database, `patients/${uid}/profile/familyMembers`), updatedMembers);
+            onClose();
+        };
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <h3>Edit Family Member: {member.name}</h3>
+                    <div style={{ display: 'flex', gap: '20px' }}>
+                        <div>
+                            <img src={localMember.photo || UserIcon} alt="Member" style={{ width: "120px", height: "120px", borderRadius: "50%", objectFit: "cover" }} />
+                            <input type="file" accept="image/*" onChange={handleProfilePhotoChange} />
+                        </div>
+                        <div style={{ flexGrow: 1 }}>
+                            <input className="edit-input" placeholder="Name" value={localMember.name} onChange={e => handleFieldChange('name', e.target.value)} />
+                            <input className="edit-input" placeholder="Relationship" value={localMember.relationship} onChange={e => handleFieldChange('relationship', e.target.value)} />
+                            <input type="date" className="edit-input" value={localMember.dob} onChange={e => handleFieldChange('dob', e.target.value)} />
+                            <input className="edit-input" placeholder="Blood Group" value={localMember.bloodGroup} onChange={e => handleFieldChange('bloodGroup', e.target.value)} />
+                            <textarea className="description-textarea" placeholder="Existing Conditions" value={localMember.conditions} onChange={e => handleFieldChange('conditions', e.target.value)} />
+                            <input className="edit-input" placeholder="Allergies" value={localMember.allergies} onChange={e => handleFieldChange('allergies', e.target.value)} />
+                            <input className="edit-input" placeholder="Chronic Diseases" value={localMember.chronicDiseases} onChange={e => handleFieldChange('chronicDiseases', e.target.value)} />
+                            <input className="edit-input" placeholder="Current Medications" value={localMember.currentMedications} onChange={e => handleFieldChange('currentMedications', e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="modal-actions">
+                        <button className="save-btn" onClick={handleSaveEdit}>Save</button>
+                        <button className="cancel-btn" onClick={onClose}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderInfoField = (label, name, value, type = "text") => {
+        const isReadOnly = name === "email" || name === "fullName";
+        const cannotDelete = name === "phone";
+        return (
+            <div className="profile-info-field">
+                <label>{label}</label>
+                {editMode === name && !isReadOnly ? (
+                    <>
+                        <input type={type} name={name} value={value || ""} onChange={(e) => setPatientData({ ...patientData, [name]: e.target.value })} className="edit-input" />
+                        <button className="save-btn" onClick={() => handleSave("main")}>Save</button>
+                    </>
+                ) : (
+                    <>
+                        <p>{value || "N/A"}</p>
+                        {!isReadOnly && <button className="save-btn" onClick={() => setEditMode(name)}>✏️</button>}
+                        {!isReadOnly && !cannotDelete && value && <button className="delete-btn" onClick={() => setPatientData({ ...patientData, [name]: "" })}>🗑️</button>}
+                    </>
+                )}
+            </div>
+        );
+    };
+
+    if (!patientData) return <p>Loading profile...</p>;
+
     const ProfileHeader = () => (
         <div className="dashboard-header">
             <div className="header-left">
@@ -142,9 +369,11 @@ const PatientProfile = () => {
                 <span className="header-title">My Profile</span>
             </div>
             <div className="header-right">
+                <div className="home-icon" onClick={() => navigate("/PatientDashboard")}>
+                    <img src={HomeIcon} alt="Home" />
+                </div>
                 <img src={BellIcon} alt="Notifications" className="notification-bell" />
-                <span className="logout-text">Log Out</span>
-                <img src={UserIcon} alt="Profile" className="profile-icon" />
+                <button className="pd-btn-text" onClick={handleLogout}>Log Out</button>
             </div>
         </div>
     );
@@ -152,39 +381,33 @@ const PatientProfile = () => {
     return (
         <div className="patient-profile-container">
             <ProfileHeader />
-
             <div className="profile-main-content">
-                
-                {/* 1. Profile Photo & Quick Actions */}
+                {/* Profile Header */}
                 <div className="profile-header-card">
                     <div className="profile-photo-area">
-                        {/* Placeholder for actual photo */}
                         <div className="profile-photo-placeholder">
-                            <img src={UserIcon} alt="Profile" />
+                            <img src={profilePhotoPreview || patientData.profilePhoto || UserIcon} alt="Profile" />
                         </div>
-                        <button className="upload-photo-btn">Upload Photo</button>
+                        <input type="file" accept="image/*" id="profile-photo-upload" style={{ display: "none" }} onChange={handleProfilePhotoSelect}/>
+                        <button className="upload-photo-btn" onClick={() => document.getElementById("profile-photo-upload").click()}>Upload Photo</button>
+                        {profilePhotoFile && <button className="save-btn" onClick={handleProfilePhotoSave}>Save Photo</button>}
                     </div>
-
                     <div className="welcome-info">
                         <h2>Hello, {patientData.fullName}!</h2>
                         <p>Manage your account, health records, and family details here.</p>
-                        <button 
-                            className="change-password-btn" 
-                            onClick={() => alert("Redirecting to Change Password page...")}
-                        >
-                            Change Password
-                        </button>
+                        <button className="change-password-btn" onClick={() => alert("Redirecting to Change Password page...")}>Change Password</button>
                     </div>
                 </div>
 
+                {/* Profile Info */}
                 <div className="profile-grid">
-                    {/* 2. Basic and Address Info */}
+                    {/* Basic Info */}
                     <div className="profile-section basic-info">
                         <h3>✅ Basic & Contact Information</h3>
                         {renderInfoField('Full Name', 'fullName', patientData.fullName)}
-                        {renderInfoField('Email Address', 'email', patientData.email, false)} {/* Email usually requires re-verification */}
+                        {renderInfoField('Email Address', 'email', patientData.email)}
                         {renderInfoField('Phone Number', 'phone', patientData.phone)}
-                        
+
                         <h3>🏠 Address Details</h3>
                         {renderInfoField('Street Address', 'street', patientData.street)}
                         {renderInfoField('City', 'city', patientData.city)}
@@ -192,11 +415,11 @@ const PatientProfile = () => {
                         {renderInfoField('Postal Code', 'postalCode', patientData.postalCode)}
                         {renderInfoField('Alternative Contact', 'alternativeContact', patientData.alternativeContact)}
                     </div>
-                    
-                    {/* 3. Identity and Health Profile */}
+
+                    {/* Health Info */}
                     <div className="profile-section health-info">
                         <h3>🆔 Identity & DOB</h3>
-                        {renderInfoField('Date of Birth', 'dob', patientData.dob, true, 'date')}
+                        {renderInfoField('Date of Birth', 'dob', patientData.dob)}
                         {renderInfoField('Gender', 'gender', patientData.gender)}
                         {renderInfoField('NIC', 'nic', patientData.nic)}
 
@@ -207,50 +430,157 @@ const PatientProfile = () => {
                         {renderInfoField('Chronic Diseases (e.g., BP, Diabetes)', 'chronicDiseases', patientData.chronicDiseases)}
                         {renderInfoField('Current Medications', 'currentMedications', patientData.currentMedications)}
                     </div>
+
+                    {/* Description Section */}
+                    <div className="profile-section">
+                        <h3>📝 Description</h3>
+                        <textarea
+                            value={patientData.description || ''}
+                            onChange={(e) => setPatientData({ ...patientData, description: e.target.value })}
+                            placeholder="Add your personal notes or description..."
+                            className="description-textarea"
+                        />
+                        <button className="save-btn" onClick={() => handleSave('main')}>Save Description</button>
+                    </div>
+
+                    {/* Extra Details Section */}
+                    <div className="profile-section">
+                        <h3>➕ Extra Details</h3>
+                        {extraDetails.map((item, idx) => (
+                            <div key={idx} className="profile-info-field">
+                                <input
+                                    type="text"
+                                    placeholder="Field Name"
+                                    value={item.key}
+                                    onChange={(e) => {
+                                        const updated = [...extraDetails];
+                                        updated[idx].key = e.target.value;
+                                        setExtraDetails(updated);
+                                    }}
+                                    className="edit-input"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Field Value"
+                                    value={item.value}
+                                    onChange={(e) => {
+                                        const updated = [...extraDetails];
+                                        updated[idx].value = e.target.value;
+                                        setExtraDetails(updated);
+                                    }}
+                                    className="edit-input"
+                                />
+                                <button className="delete-btn" onClick={() => {
+                                    const updated = extraDetails.filter((_, i) => i !== idx);
+                                    setExtraDetails(updated);
+                                }}>Delete</button>
+                            </div>
+                        ))}
+                        <button className="add-member-btn" onClick={() => setExtraDetails([...extraDetails, { key: '', value: '' }])}>
+                            Add New Detail
+                        </button>
+                        <button className="save-btn" onClick={() => handleSaveExtraDetails()}>Save Extra Details</button>
+                    </div>
                 </div>
 
-                {/* 4. Family Members Section */}
+                {/* Family Members Section */}
                 <div className="profile-section family-section">
                     <div className="section-header">
                         <h3>👨‍👩‍👧‍👦 Family Members</h3>
-                        <button className="add-member-btn" onClick={() => alert("Open 'Add Family Member' Form")}>
-                            <img src={AddIcon} alt="Add" className="add-icon" /> Add New Member
+                        <button
+                            className="add-member-btn"
+                            onClick={() => {
+                                if (familyMembers.length >= 3) {
+                                    alert("You can only add up to 3 family members");
+                                    return;
+                                }
+                                setShowAddMember(true);
+                            }}
+                        >
+                            + Add New Member
                         </button>
                     </div>
-
                     <div className="family-members-list">
                         {familyMembers.map(member => (
                             <div className="member-card" key={member.id}>
                                 <div className="member-details">
-                                    <h4>{member.name}</h4>
-                                    <p>DOB: {member.dob} | Blood Group: {member.bloodGroup}</p>
+                                    <img
+                                        src={member.photo || UserIcon}
+                                        alt="member"
+                                        style={{
+                                            width: "50px",
+                                            height: "50px",
+                                            borderRadius: "50%",
+                                            objectFit: "cover",
+                                            marginRight: "10px"
+                                        }}
+                                    />
+                                    <h4>{member.name} <small>({member.relationship})</small></h4>
+                                    <p>DOB: {member.dob} | Blood Group: {member.bloodGroup || 'N/A'}</p>
                                     <small>Conditions: {member.conditions || 'None'} | Allergies: {member.allergies || 'None'}</small>
+                                    <small>Medications: {member.currentMedications || 'None'}</small>
                                 </div>
                                 <div className="member-actions">
-                                    <button className="edit-btn" onClick={() => alert(`Editing ${member.name}`)}><img src={PencilIcon} alt="Edit" /></button>
-                                    <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}><img src={DeleteIcon} alt="Delete" /></button>
+                                    <button className="edit-btn" onClick={() => handleEditMember(member)}>
+                                        <span role="img" aria-label="Edit">&#9998;</span> Edit Health
+                                    </button>
+                                    <button className="delete-btn" onClick={() => handleDeleteMember(member.id)}>
+                                        <span role="img" aria-label="Delete">&#128465;</span>
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* 5. Reports and Prescriptions Upload */}
+                {/* Documents Section */}
                 <div className="profile-section document-section">
                     <div className="section-header">
                         <h3>📁 Reports & Prescriptions</h3>
-                        <label htmlFor="document-upload" className="upload-label">
-                            <img src={UploadIcon} alt="Upload" className="upload-icon" /> Upload Document
-                        </label>
-                        <input 
-                            type="file" 
-                            id="document-upload" 
-                            onChange={handleDocumentUpload} 
-                            style={{ display: 'none' }}
-                            accept=".pdf, .jpg, .jpeg, .png"
-                        />
+                        <div className="document-upload-controls">
+                            <label htmlFor="member-select" className="member-select-label">Upload For:</label>
+                            <select
+                                id="member-select"
+                                className="member-select"
+                                value={documentUploadMember}
+                                onChange={(e) => setDocumentUploadMember(e.target.value)}
+                            >
+                                <option value={patientData.fullName}>{patientData.fullName} (Self)</option>
+                                {familyMembers.map(member => <option key={member.id} value={member.name}>{member.name}</option>)}
+                            </select>
+
+                            <label htmlFor="document-upload" className="upload-label">
+                                <span role="img" aria-label="Upload" className="upload-icon">&#x2B06;</span> Upload Document
+                            </label>
+                            <input
+                                type="file"
+                                id="document-upload"
+                                onChange={handleDocumentSelect}
+                                style={{ display: 'none' }}
+                                accept=".pdf,image/*"
+
+                            />
+                        </div>
                     </div>
-                    
+
+                    {selectedDocument && (
+                        <div className="document-preview-box">
+                            <h4>Preview</h4>
+                            {selectedDocument.type.startsWith("image/") ? (
+                                <img
+                                    src={documentPreviewUrl}
+                                    alt="Preview"
+                                    style={{ width: "200px", borderRadius: "8px" }}
+                                />
+                            ) : (
+                                <p>📄 {selectedDocument.name}</p>
+                            )}
+                            <button className="save-btn" onClick={handleSaveDocument}>Save Document</button>
+                            <button className="cancel-btn" onClick={handleCancelDocumentUpload}>Cancel</button>
+                        </div>
+                    )}
+
+                    {/* Reports Table */}
                     <table className="document-table">
                         <thead>
                             <tr>
@@ -261,14 +591,14 @@ const PatientProfile = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {documents.map(doc => (
+                            {documents.filter(d => d.category === "report").map(doc => (
                                 <tr key={doc.id}>
-                                    <td className="doc-name">{doc.name}</td>
+                                    <td>{doc.name}</td>
                                     <td>{doc.member}</td>
                                     <td>{doc.date}</td>
                                     <td>
-                                        <button className="action-view">View</button>
-                                        <button className="action-delete" onClick={() => handleDeleteDocument(doc.id)}><img src={DeleteIcon} alt="Delete" /></button>
+                                        <button className="action-view" onClick={() => handleViewDocument(doc)}>View</button>
+                                        <button className="action-delete" onClick={() => handleDeleteDocument(doc.id)}>🗑️</button>
                                     </td>
                                 </tr>
                             ))}
@@ -276,6 +606,31 @@ const PatientProfile = () => {
                     </table>
                 </div>
 
+                {/* Prescriptions Section */}
+                <div className="profile-section prescriptions-section">
+                    <h3>💊 Prescriptions</h3>
+                    <div className="prescription-cards">
+                        {documents.filter(d => d.category === "prescription").map(doc => (
+                            <div key={doc.id} className="prescription-card">
+                                <div className="prescription-owner">
+                                    <img src={doc.member === patientData.fullName ? (patientData.profilePhoto || UserIcon) : (familyMembers.find(m => m.name === doc.member)?.photo || UserIcon)} alt="Owner" className="owner-photo"/>
+                                    <span>{doc.member}</span>
+                                </div>
+                                <div className="prescription-info">
+                                    <p className="doc-name">{doc.name}</p>
+                                    <p className="doc-date">{doc.date}</p>
+                                    <p className="doc-type">{doc.type === "pdf" ? "PDF Document" : "Image"}</p>
+                                </div>
+                                <button className="action-view" onClick={() => handleViewDocument(doc)}>View</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {showAddMember && <AddFamilyMemberModal />}
+                {isMemberEditOpen && (
+                    <FamilyMemberModal member={editingMember} onClose={() => setIsMemberEditOpen(false)} />
+                )}
             </div>
         </div>
     );
