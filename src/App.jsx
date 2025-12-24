@@ -1,29 +1,42 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import LandingPage from './LandingPage/LandingPage';
-import './App.css'; 
+import PatientRegistrationPage from './RegistrationPage/PatientRegistrationPage';
+import PharmacyRegistrationPage from './RegistrationPage/PharmacyRegistrationPage';
+import PatientDetailCollection from './DetailsCollection/PatientDetailsCollection';
+import PharmacyDetailCollection from './DetailsCollection/PharmacyDetailsCollection';
+import PatientProfile from './patientProfile/PatientProfile';
 
-// IMPORTANT: For react-slick to work, you must import its base CSS files.
-// Ensure you have installed slick-carousel: npm install slick-carousel
-import "slick-carousel/slick/slick.css"; 
-import "slick-carousel/slick/slick-theme.css";
+import PatientDashboard from './Components/Dashboard/PatientDashboard';
+import PharmacyDashboard from './Components/Dashboard/PharmacyDashboard';
+import AdminDashboard from './Components/Dashboard/AdminDashboard';
+import DoctorDashboard from './Components/Dashboard/DoctorDashboard';
 
-function App() {
+import VerifyEmail from './VerifyEmail/VerifyEmail';
+
+const App = () => {
   return (
-    <div className="App">
-      {/* In a real app, you would use react-router-dom here:
-        <Router>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<PatientDashboard />} />
-            {/* ... other routes ... *
-          </Routes>
-        </Router>
-      */}
-      
-      {/* For this static design, we render the LandingPage directly */}
-      <LandingPage />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+
+        <Route path="/register-patient" element={<PatientRegistrationPage />} />
+        <Route path="/register-pharmacy" element={<PharmacyRegistrationPage />} />
+
+        <Route path="/patient-details" element={<PatientDetailCollection />} />
+        <Route path="/pharmacy-details" element={<PharmacyDetailCollection />} />
+
+        <Route path="/PatientDashboard" element={<PatientDashboard />} />
+        <Route path="/PharmacyDashboard" element={<PharmacyDashboard />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard />} />
+        <Route path="/DoctorDashboard" element={<DoctorDashboard />} />
+
+        <Route path="/VerifyEmail" element={<VerifyEmail />} />
+        <Route path="/patientProfile" element={<PatientProfile />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;

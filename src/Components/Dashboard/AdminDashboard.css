@@ -1,0 +1,353 @@
+/* src/AdminDashboard.css - REVISED */
+
+/* --- Color Variables --- */
+:root {
+    --color-dark-green: #07741B;    /* Primary: Deep Green */
+    --color-medium-green: #18D23A;  /* Secondary: Bright Green */
+    --color-light-green: #BCFFC6;   /* Background Accent: Pale Green */
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-red: #EC1414;           /* Alert/Danger: Red */
+    --color-gray: #D9D9D9;          /* Border/Separator: Light Gray */
+    --color-accent-blue: #96A1FF;   /* Accent: Light Blue/Purple */
+    
+    /* New Status Colors */
+    --status-verified: var(--color-dark-green);
+    --status-pending: #FFA500; /* Orange */
+    --status-new: #1e90ff;     /* Dodger Blue */
+    --status-re-verify: #FFD700; /* Gold */
+    --status-delivered: var(--color-dark-green);
+    --status-processing: #1e90ff;
+    --status-paid: var(--color-medium-green);
+}
+
+/* --- Base Layout --- */
+.admin-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-light-green); /* BCFFC6 */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Top Header Bar --- */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    background-color: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.header-left { display: flex; align-items: center; }
+
+/* 🚀 FIX: Increased Logo Size here (from 40px to 50px) */
+.header-logo-img { 
+    width: 50px; 
+    height: 50px; 
+    margin-right: 10px; 
+}
+
+.header-title { font-size: 1.5rem; font-weight: 700; color: var(--color-dark-green); }
+.header-right { display: flex; align-items: center; gap: 20px; }
+.notification-bell, .profile-icon { width: 24px; height: 24px; cursor: pointer; }
+.logout-text { color: #555; cursor: pointer; font-size: 0.9rem; }
+
+
+/* --- Navigation Bar (Green Strip below header) --- */
+.dashboard-nav {
+    background-color: var(--color-medium-green); /* 18D23A */
+    display: flex;
+    justify-content: space-around;
+    padding: 0 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    color: var(--color-white);
+    padding: 15px 20px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s, border-bottom 0.3s;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid var(--color-dark-green);
+}
+
+.nav-link.active {
+    background-color: var(--color-dark-green); /* 07741B */
+    border-bottom: 3px solid var(--color-white);
+}
+
+/* --- Main Content Area --- */
+.dashboard-main-content {
+    padding: 30px;
+    flex-grow: 1;
+}
+
+.welcome-section {
+    margin-bottom: 30px;
+    color: var(--color-dark-green);
+}
+
+.welcome-section h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    border-bottom: 3px solid var(--color-medium-green);
+    padding-bottom: 5px;
+}
+
+.subtitle {
+    font-size: 1.0rem;
+    font-weight: 400;
+    color: #666;
+}
+
+/* --- Card Grid Layout (KPIs) --- */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    border-left: 5px solid; /* Use style prop for color */
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #555; /* Neutral color, specific color added in JS via style prop */
+}
+
+.card-icon {
+    width: 30px;
+    height: 30px;
+    opacity: 0.7;
+}
+
+.card-content h3 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--color-dark-green); /* Default value */
+}
+
+
+/* --- List/Table Section --- */
+.list-section, .table-section {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.list-section h2, .table-section h2 {
+    font-size: 1.6rem;
+    color: var(--color-dark-green);
+    margin-top: 0;
+}
+
+.list-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--color-light-green);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.list-section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-dark-green);
+    margin: 0;
+}
+
+.view-details-btn, .add-btn {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+    padding: 8px 15px;
+    border: none;
+    border-radius: 25px; /* Pill shape for action buttons */
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-details-btn:hover, .add-btn:hover {
+    background-color: var(--color-dark-green);
+    transform: translateY(-1px);
+}
+
+/* --- List Items (Approvals/Quick View) --- */
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.list-item:hover {
+    background-color: var(--color-light-green);
+    padding: 12px 10px;
+    margin: 0 -10px;
+    border-radius: 5px;
+    transition: all 0.2s;
+}
+
+.list-item:last-child { border-bottom: none; }
+
+.item-details p {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-dark-green);
+}
+
+.item-details small {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+/* --- Status Tags for List Items --- */
+.status-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.status-new { 
+    background-color: var(--status-new); 
+    color: var(--color-white); 
+}
+
+.status-re-verify { 
+    background-color: var(--status-re-verify); 
+    color: var(--color-black); 
+}
+
+/* --- Table Styles --- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-gray);
+    font-size: 0.95rem;
+}
+
+.data-table th {
+    background-color: var(--color-light-green) !important; /* BCFFC6 */
+    color: var(--color-dark-green);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.data-table tr:hover {
+    background-color: #f0fff0;
+}
+
+/* --- Status Text in Tables --- */
+.status-text {
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-text.status-verified { color: var(--status-verified); }
+.status-text.status-pending { color: var(--status-pending); }
+.status-text.status-paid { color: var(--status-paid); }
+.status-text.status-delivered { color: var(--status-delivered); }
+.status-text.status-processing { color: var(--status-processing); }
+
+
+/* --- Action Buttons in Tables/Lists --- */
+.action-btn {
+    padding: 7px 12px;
+    margin-left: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+    opacity: 0.9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.action-approve {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+}
+
+.action-reject {
+    background-color: var(--color-red);
+    color: var(--color-white);
+}
+
+.action-view {
+    background-color: var(--color-accent-blue);
+    color: var(--color-white);
+}
+.action-suspend {
+    background-color: var(--color-black);
+    color: var(--color-white);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .dashboard-nav {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    .nav-link {
+        padding: 10px 15px;
+    }
+    .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .data-table th, .data-table td {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
+}
+
