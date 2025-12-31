@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {  useLocation,useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg'; 
 import RegistrationImage from '../assets/registration_img.png';
 import '../RegistrationFormsCommon.css'; 
 import GoogleIcon from '../assets/google.png'; 
 import API from "../api/api";
+import { LoginModal } from "../Components/models/LoginModal";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../Firebase";
 
 
-import { LoginModal } from "../Components/UI/LoginModal";
 
 const PatientRegistrationPage = () => {
   const navigate = useNavigate();
-
-
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loading, setLoading] = useState(false); // <-- NEW loading state
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,8 +24,12 @@ const PatientRegistrationPage = () => {
   });
 
   useEffect(() => {
+  if (window.google) {
     handleGoogleSignIn();
-  }, []);
+  }
+}, []);
+
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -45,6 +50,7 @@ const PatientRegistrationPage = () => {
     }
 
     try {
+      setLoading(true); // <-- START loading
       const payload = {
         name: formData.name,
         email: formData.email,
@@ -58,33 +64,43 @@ const PatientRegistrationPage = () => {
       console.log("🟩 Backend response:", res.data);
 
       const uid = res.data?.uid;
-      if (!uid) {
-        throw new Error("Backend did not return a UID");
-      }
+if (!uid) {
+  throw new Error("Backend did not return a UID");
+}
 
-      localStorage.setItem("patient_uid", uid);
+// ✅ SIGN IN USER TO FIREBASE (CRITICAL STEP)
 
-      console.log("🟩 UID saved:", uid);
+await signInWithEmailAndPassword(
+  auth,
+  formData.email,
+  formData.password
+);
 
-      navigate("/patient-details", {
-        state: {
-          userData: {
-            role: "Patient",
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }
-        }
-      });
+console.log("Firebase user:", auth.currentUser?.email);
+
+localStorage.setItem("patient_uid", uid);
+
+navigate("/patient-details", {
+  state: {
+    userData: {
+      role: "Patient",
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    }
+  }
+});
+
 
     } catch (err) {
       console.error(" Registration Step1 Error:", err);
-
       if (err.response) {
         alert("Error: " + err.response.data.error);
       } else {
         alert("Failed to connect to backend. Check console.");
       }
+    } finally {
+      setLoading(false); // <-- STOP loading
     }
   };
 
@@ -131,14 +147,12 @@ const PatientRegistrationPage = () => {
   return (
     <div className="registration-page">
 
-      {/* ⭐ LOGIN MODAL */}
       <LoginModal 
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
       />
 
       <div className="form-wrapper">
-        
         <div className="image-container">
           <img src={RegistrationImage} alt="Patient Illustration" />
           <p className="image-caption">
@@ -181,7 +195,7 @@ const PatientRegistrationPage = () => {
             </div>
 
             <button type="submit" className="register-btn primary-btn" style={{ marginTop: '20px' }}>
-              Register
+              {loading ? "Registering..." : "Register"} {/* <-- UPDATED */}
             </button>
 
             <div className="separator">
@@ -189,18 +203,16 @@ const PatientRegistrationPage = () => {
             </div>
 
             <div id="googleBtn" style={{ marginTop: "10px" }}>
-                          <button type="button" className="google-sign-in" onClick={handleGoogleSignIn}>
-                            <img src={GoogleIcon} alt="Google" />
-                            Sign in with Google
-                          </button>
-                        </div>
+              <button type="button" className="google-sign-in" onClick={handleGoogleSignIn}>
+                <img src={GoogleIcon} alt="Google" />
+                Sign in with Google
+              </button>
+            </div>
 
-            {/* ⭐ FIXED SIGN-IN CLICK */}
             <p className="login-link">
               Already have an account?{" "}
               <span onClick={() => setIsLoginOpen(true)}>Sign In</span>
             </p>
-
           </form>
         </div>
       </div>

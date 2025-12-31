@@ -1,0 +1,179 @@
+/* --- Page Container --- */
+.doctor-page-container {
+    background-color: #F5F5F5; /* Off-White from your palette */
+    padding: 60px 10%;
+    min-height: 100vh;
+}
+
+.doctor-header-section {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.doctor-header-section h2 {
+    font-size: 2.4rem;
+    color: #000000;
+    margin-bottom: 10px;
+}
+
+.doctor-header-section p {
+    color: #707070;
+    font-size: 1.1rem;
+}
+
+/* --- The Doctor Row Card --- */
+.doctor-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.doctor-row-card {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 35px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.doctor-row-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Column Alignment */
+.doc-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 1. Profile Section */
+.doc-profile {
+    flex: 2; /* Takes more space for the name */
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+}
+
+.avatar-bg {
+    width: 70px;
+    height: 70px;
+    background-color: #BCFFC6; /* Light Green */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #18D23A;
+    overflow: hidden;
+}
+
+.doc-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.doc-name-group h4 {
+    font-size: 1.25rem;
+    color: #000000;
+}
+
+.doc-name-group span {
+    color: #707070;
+    font-size: 0.9rem;
+}
+
+/* 2. Stats Section */
+.doc-stats {
+    flex: 1;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #07741B; /* Dark Green */
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #707070;
+}
+
+/* 3. Availability Section */
+.doc-availability {
+    flex: 1;
+    text-align: center;
+}
+
+.status-pill {
+    font-weight: bold;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.status-pill.available {
+    color: #18D23A; /* Vibrant Green */
+    background-color: rgba(24, 210, 58, 0.1); /* Subtle green bg */
+}
+
+.status-pill.unavailable {
+    color: #EC1414; /* Bright Red */
+    background-color: rgba(236, 20, 20, 0.1); /* Subtle red bg */
+}
+
+/* 4. Action Button Section */
+.doc-action {
+    flex: 1;
+    text-align: right;
+}
+
+.book-btn {
+    background-color: #EC1414; /* Bright Red */
+    color: #FFFFFF;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.book-btn:hover:not(.disabled) {
+    background-color: #D90F0F; /* Dark Red */
+}
+
+.book-btn.disabled {
+    background-color: #D9D9D9;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Responsive Fix */
+@media (max-width: 850px) {
+    .doctor-row-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    .doc-profile {
+        flex-direction: column;
+        flex: none;
+    }
+    .doc-action {
+        text-align: center;
+        width: 100%;
+    }
+    .book-btn {
+        width: 100%;
+    }
+}

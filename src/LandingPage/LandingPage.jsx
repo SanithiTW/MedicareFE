@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css"; 
 
-import { LoginModal } from '../Components/UI/LoginModal';
+import { LoginModal } from '../Components/models/LoginModal';
 import { RegisterDropdown } from '../Components/UI/RegisterDropdown'; // NEW Component
 import './LandingPage.css';
 

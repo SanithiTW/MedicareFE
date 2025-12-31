@@ -1,29 +1,29 @@
 /* Color Palette:
-   --color-dark-green: #07741B;
-   --color-light-green-bg: #BCFFC6; 
-   --color-bright-green: #18D23A; 
-   --color-white: #FFFFFF;
-   --color-grey-border: #D9D9D9; 
-   --color-red: #EC1414; 
+    --color-dark-green: #07741B;
+    --color-light-green-bg: #BCFFC6;
+    --color-bright-green: #18D23A;
+    --color-white: #FFFFFF;
+    --color-grey-border: #D9D9D9;
+    --color-red: #EC1414;
 */
 
 .patient-profile-container {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--color-light-green-bg); /* BCFFC6 */
+    background-color: var(--color-light-green-bg);
     font-family: Arial, sans-serif;
     padding: 0;
 }
 
-/* --- 1. Shared Header Styles (Copied from Dashboard) --- */
+/* --- 1. Header Styles (Logo Fix Applied) --- */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--color-white); 
-    padding: 10px 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--color-white);
+    padding: 15px 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header-left {
@@ -31,111 +31,148 @@
     align-items: center;
 }
 
+/* 🚀 FIX: Increased Logo Size */
 .header-logo-img {
-    height: 40px;
-    width: auto;
+    width: 38px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: cover;
+   min-width: 154px;
     margin-right: 15px;
 }
 
 .header-title {
     font-size: 24px;
     font-weight: bold;
-    color: var(--color-dark-green); /* 07741B */
+    color: var(--color-dark-green);
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
 }
+
+/* --- Home / Dashboard Icon --- */
+.home-icon {
+    width: 32px; /* match other icons like bell */
+    height: 32px;
+    cursor: pointer;
+    border-radius: 6px;
+    background-color: green;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.home-icon img {
+    width: 20px;
+    height: 20px;
+}
+
+.home-icon:hover {
+    background-color: gray;
+    transform: scale(1.1);
+}
+
 
 .notification-bell,
 .profile-icon {
-    height: 24px;
+    height: 28px;
     cursor: pointer;
 }
 
 .logout-text {
-    color: #555;
+    color: var(--color-dark-green);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 /* --- 2. Main Content and Layout --- */
 .profile-main-content {
-    background-color: var(--color-white); /* FFFFFF */
-    margin: 20px;
-    padding: 30px;
+    background-color: var(--color-white);
+    margin: 25px auto;
+    max-width: 1000px;
+    padding: 40px;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     flex-grow: 1;
 }
 
 h3 {
-    color: var(--color-dark-green); /* 07741B */
-    border-bottom: 2px solid var(--color-light-green-bg);
-    padding-bottom: 5px;
-    margin-top: 25px;
-    margin-bottom: 15px;
+    color: var(--color-dark-green);
+    border-bottom: 3px solid var(--color-bright-green);
+    padding-bottom: 8px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
 }
 
 .profile-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: 40px;
     margin-bottom: 30px;
 }
 
 .profile-section {
-    padding: 15px;
-    border: 1px solid var(--color-grey-border); /* D9D9D9 */
+    padding: 20px;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
+    background-color: #fcfcfc;
 }
 
 /* --- 3. Profile Header Card --- */
 .profile-header-card {
     display: flex;
     align-items: center;
-    gap: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--color-grey-border);
-    margin-bottom: 20px;
+    gap: 40px;
+    padding-bottom: 25px;
+    border-bottom: 2px solid var(--color-light-green-bg);
+    margin-bottom: 30px;
 }
 
 .profile-photo-placeholder {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    border: 4px solid var(--color-bright-green);
     background-color: #f0f0f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
     margin-bottom: 10px;
-    border: 3px solid var(--color-bright-green);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
 }
 
 .profile-photo-placeholder img {
-    width: 60%;
-    height: 60%;
-    object-fit: contain;
+    width: 100%;          /* Take full width of circle */
+    height: 100%;         /* Take full height */
+    border-radius: 50%;   /* Ensure it stays circular */
+    object-fit: cover;    /* Crop and cover the circle nicely */
+    opacity: 1;           /* Full visibility */
+    transition: transform 0.3s ease;
 }
 
-.upload-photo-btn, .change-password-btn {
-    padding: 8px 15px;
+.upload-photo-btn {
+    padding: 10px 18px;
     border: 1px solid var(--color-dark-green);
     background-color: var(--color-white);
     color: var(--color-dark-green);
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-right: 10px;
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+.upload-photo-btn:hover {
+    background-color: var(--color-light-green-bg);
 }
 
 .change-password-btn {
-    background-color: var(--color-dark-green); /* Dark green for prominence */
+    background-color: var(--color-dark-green);
     color: var(--color-white);
-    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
 }
 
 .change-password-btn:hover {
@@ -145,14 +182,17 @@ h3 {
 .welcome-info h2 {
     color: var(--color-dark-green);
     margin-top: 0;
+    font-size: 1.8rem;
 }
 
 /* --- 4. Info Fields and Editing --- */
 .profile-info-field {
+    
     display: flex;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--color-grey-border);
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    gap: 10px;
 }
 
 .profile-info-field:last-of-type {
@@ -160,13 +200,14 @@ h3 {
 }
 
 .profile-info-field label {
-    flex: 0 0 180px; /* Fixed width for labels */
+    flex: 0 0 160px;
     font-weight: 600;
-    color: #555;
+    color: #444;
     font-size: 14px;
 }
 
-.profile-info-field p, .profile-info-field input {
+.profile-info-field p,
+.profile-info-field input {
     flex-grow: 1;
     margin: 0;
     font-size: 15px;
@@ -174,39 +215,44 @@ h3 {
 }
 
 .edit-input {
-    padding: 5px 8px;
-    border: 1px solid var(--color-bright-green);
+    padding: 5px 10px;
+    border: 1px solid var(--color-dark-green);
     border-radius: 4px;
-    box-sizing: border-box;
+    background-color: #fff;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.edit-btn {
+.edit-btn,
+.action-delete {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0;
-    margin-left: 10px;
+    padding: 5px;
+    color: var(--color-dark-green);
+    font-size: 18px;
+    transition: color 0.2s;
 }
 
-.edit-btn img {
-    width: 18px;
-    height: 18px;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-.edit-btn:hover img {
-    opacity: 1;
+.edit-btn:hover {
+    color: var(--color-bright-green);
 }
 
 .save-btn {
-    background-color: var(--color-bright-green); /* 18D23A */
-    color: var(--color-white);
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+    background-color: var(--color-bright-green);
+    color: var(--color-dark-green);
+    border: 1px solid #ccc;
+    padding: 6px 15px;
+    border-radius: 20px;
     cursor: pointer;
-    margin-left: 10px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+
+
+    
+}
+
+.save-btn:hover {
+    background-color: var(--color-dark-green);
 }
 
 /* --- 5. Family Member Section --- */
@@ -219,121 +265,469 @@ h3 {
 .add-member-btn {
     background-color: var(--color-dark-green);
     color: var(--color-white);
-    border: none;
     padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: background-color 0.2s;
 }
 
-.add-icon {
-    width: 16px;
-    height: 16px;
-    filter: brightness(0) invert(1); /* Change to white for dark background */
+.add-member-btn:hover {
+    background-color: var(--color-bright-green);
 }
 
 .family-members-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
 
 .member-card {
-    background-color: #f9f9f9;
+    background-color: #f7fff7;
     padding: 15px;
     border-radius: 8px;
+    border: 1px solid var(--color-light-green-bg);
     border-left: 5px solid var(--color-bright-green);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.member-details h4 {
-    margin: 0 0 5px 0;
-    color: var(--color-dark-green);
+.member-details small {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
 }
 
-.member-details p, .member-details small {
-    margin: 0;
-    font-size: 13px;
-    color: #666;
+.member-details h4 {
+    color: var(--color-dark-green);
+    margin-bottom: 5px;
+}
+
+.member-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.member-actions .edit-btn {
+    font-size: 14px;
+    padding: 5px 10px;
+    border: 1px solid var(--color-dark-green);
+    border-radius: 4px;
+    color: var(--color-dark-green);
 }
 
 .member-actions .delete-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    margin-left: 10px;
+    color: var(--color-red);
+    font-size: 18px;
 }
 
-.member-actions img {
-    width: 18px;
-    height: 18px;
-    opacity: 0.7;
-}
-
-.member-actions .delete-btn img {
-    filter: drop-shadow(1px 1px 0 var(--color-red));
-}
-
-/* --- 6. Document Section --- */
-.upload-label {
-    background-color: var(--color-bright-green); /* 18D23A */
-    color: var(--color-white);
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.upload-icon {
-    width: 16px;
-    height: 16px;
-    filter: brightness(0) invert(1);
-}
-
-.document-table {
+.description-textarea {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid var(--color-dark-green);
+    border-radius: 8px;
+    resize: vertical;
     font-size: 14px;
 }
 
-.document-table th, .document-table td {
-    border: 1px solid var(--color-grey-border);
-    padding: 10px;
+/* --- 6. Document Section --- */
+.document-upload-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.member-select-label {
+    font-weight: 600;
+    color: var(--color-dark-green);
+}
+
+.member-select {
+    padding: 8px 12px;
+    border: 1px solid var(--color-dark-green);
+    border-radius: 4px;
+}
+
+.upload-label {
+    background-color: var(--color-bright-green);
+    color: #555;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex; /* Added for professional icon alignment */
+    align-items: center; /* Added for professional icon alignment */
+    gap: 8px; /* Added for professional icon spacing */
+}
+
+.upload-label:hover {
+    background-color: #12a12f;
+}
+
+/* 🚀 FIX: Document Table Styling */
+.document-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.document-table th,
+.document-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e0e0e0;
     text-align: left;
+    font-size: 14px;
 }
 
 .document-table th {
-    background-color: var(--color-light-green-bg); /* BCFFC6 */
+    background-color: var(--color-light-green-bg);
     color: var(--color-dark-green);
-    font-weight: 600;
+    font-weight: 700;
 }
 
-.doc-name {
+.document-table tr:hover {
+    background-color: #f7fff7;
+}
+
+/* 🚀 FIX: View Button Style */
+.document-table .action-view {
+    background-color: var(--color-dark-green);
+    color: var(--color-white);
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    margin-right: 10px;
+    transition: background-color 0.2s;
+}
+
+.document-table .action-view:hover {
+    background-color: var(--color-bright-green);
+}
+
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--color-white);
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 700px;
+    width: 90%;
+}
+
+.note {
+    font-style: italic;
+    color: #cc8400; /* Darker orange for better visibility */
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+/* 🚀 FIX: Modal Action Buttons (Save/Close) Visibility and Style */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end; /* Push buttons to the right */
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;;
+}
+
+.modal-actions .save-btn {
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
     font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+
+.modal-actions .save-btn:hover {
+    background-color: var(--color-dark-green) !important; /* Ensure hover works */
+}
+
+.modal-actions .cancel-btn {
+    /* ... (Cancel button styles) ... */
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.modal-actions .cancel-btn:hover {
+    background-color: #e0e0e0;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .profile-main-content {
+        margin: 15px;
+        padding: 20px;
+    }
+
+    .profile-header-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .document-upload-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .member-select {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+
+    .document-table,
+    .document-table thead,
+    .document-table tbody,
+    .document-table th,
+    .document-table td,
+    .document-table tr {
+        display: block;
+    }
+    
+    .document-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    .document-table tr {
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+    
+    .document-table td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+    }
+    
+    .document-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: 600;
+        text-align: left;
+        color: var(--color-dark-green);
+    }
+}
+
+
+
+
+
+
+/* --- Add Details Button --- */
+.add-details-btn {
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.add-details-btn:hover {
+    background-color: var(--color-dark-green);
+}
+
+/* --- Profile Info Fields as Clean List --- */
+.profile-info-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.profile-info-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
     color: #333;
 }
 
-.action-view {
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    margin-right: 5px;
+.profile-info-list li:last-child {
+    border-bottom: none;
 }
 
-.action-delete {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
+.profile-info-list label {
+    font-weight: 600;
+    color: var(--color-dark-green);
+    flex: 0 0 160px;
+}
+
+.profile-info-list p {
+    margin: 0;
+    flex-grow: 1;
+}
+
+/* Optional: Edit icon inside list item */
+.profile-info-list .edit-btn {
+    margin-left: 10px;
+    font-size: 16px;
+}
+
+button {
+  opacity: 1;
+  visibility: visible;
+}
+
+.profile-info-field button {
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.upload-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  opacity: 1;
+}
+
+
+
+/* Fix upload label being hidden */
+.upload-label {
+  display: inline-flex !important;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* Modal Content */
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal header */
+.modal-content h3 {
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--color-dark-green);
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.edit-member-photo {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   REPORT / PRESCRIPTION TABS
+========================= */
+.report-owner-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 2px solid #e0e0e0;
+  margin: 20px 0;
+  padding-bottom: 4px;
+}
+
+.report-owner-tabs button {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.report-owner-tabs button:hover {
+  color: var(--color-dark-green);
+}
+
+.report-owner-tabs button.active-tab {
+  color: var(--color-dark-green);
+}
+
+.report-owner-tabs button.active-tab::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--color-bright-green);
+  border-radius: 2px;
 }

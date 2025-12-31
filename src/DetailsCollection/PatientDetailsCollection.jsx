@@ -1,20 +1,42 @@
-
-// src/Pages/PatientDetailsCollection.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
 import UserIcon from '../assets/user.png'; 
 import '../RegistrationFormsCommon.css';
- import { supabase } from "../supabase";   
-
+import { supabase } from "../supabase";   
 import API from "../api/api";
 
+// Firebase imports
+import { auth } from "../Firebase"; 
+import { getAuth, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
+
+
 const PatientDetailsCollectionPage = () => {
+
+    
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("User logged in:", user.email);
+    } else {
+      console.log("No user logged in");
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
+
+
     const navigate = useNavigate();
     const location = useLocation();
-    
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+
     const initialData = location.state?.userData || {}; 
+
+    const [loading, setLoading] = useState(false);
+
+    
     
     const [edit, setEdit] = useState({
         name: false,
@@ -58,9 +80,13 @@ const PatientDetailsCollectionPage = () => {
     };
 
     const handleEditToggle = (field) => {
-        setEdit(prev => ({ ...prev, [field]: !prev[field] }));
-    };
-    
+  setEdit(prev => ({ ...prev, [field]: !prev[field] }));
+  setTimeout(() => {  // wait for render
+    if(field === 'name') nameRef.current?.focus();
+    if(field === 'email') emailRef.current?.focus();
+  }, 0);
+};
+
     const handlePasswordEdit = () => {
         alert("Password change functionality goes here! (New Password modal/fields)");
     };
@@ -112,6 +138,7 @@ const handlePhotoSelect = (e) => {
 const handleFinalRegistration = async (e) => {
   e.preventDefault();
 
+  setLoading(true);
   const finalData = { ...initialData, ...details };
   const uid = localStorage.getItem("patient_uid") || finalData.uid;
   if (!uid) {
@@ -160,15 +187,40 @@ const handleFinalRegistration = async (e) => {
     delete finalData.profilePhotoFile;
     delete finalData.profilePhotoPreview;
 
-    // 5️⃣ Save complete profile
-    await API.post(`/patient/${uid}/complete`, finalData);
-    alert("🎉 Registration Complete!");
-    navigate('/patient-dashboard');
+
+
+// 5️⃣ Save complete profile
+await API.post(`/patient/${uid}/complete`, finalData);
+
+// 6️⃣ Send Firebase verification email
+try {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (auth.currentUser) {
+    await sendEmailVerification(user);
+    alert("🎉 Registration Complete! Verification email sent.");
+  } else {
+    alert("Registration complete, but could not send verification email.");
+  }
+} catch (err) {
+  console.error("Email verification error:", err);
+}
+
+// 7️⃣ Navigate to verify-email page
+navigate('/VerifyEmail', { state: { email: details.email, uid } });
+
+
+
 
   } catch (err) {
     console.error("patient complete error:", err);
     const msg = err?.response?.data?.error || err.message;
     alert("Registration failed: " + msg);
+  }
+
+  finally {
+    setLoading(false); // ✅ stop loading
   }
 };
 
@@ -239,6 +291,7 @@ const handleFinalRegistration = async (e) => {
                         <div className="input-row">
                             <label htmlFor="name">Full Name</label>
                             <input 
+                                ref={nameRef} 
                                 type="text" 
                                 id="name" 
                                 name="name" 
@@ -252,7 +305,8 @@ const handleFinalRegistration = async (e) => {
 
                         <div className="input-row">
                             <label htmlFor="email">Email Address</label>
-                            <input 
+                            <input
+                                ref={nameRef}  
                                 type="email" 
                                 id="email" 
                                 name="email" 
@@ -262,6 +316,7 @@ const handleFinalRegistration = async (e) => {
                                 className={!edit.email ? 'display-input' : ''}
                             />
                             <span className="edit-icon" onClick={() => handleEditToggle('email')}>&#9998;</span>
+                            
                         </div>
                         
                         <div className="input-row">
@@ -378,9 +433,10 @@ const handleFinalRegistration = async (e) => {
                         </div>
                         
                         {/* FINAL REGISTER BUTTON */}
-                        <button type="submit" className="register-btn primary-btn">
-                            Complete Registration
+                        <button type="submit" className="register-btn primary-btn" disabled={loading}>
+                            {loading ? "Registering..." : "Complete Registration"}
                         </button>
+
                     </form>
                 </div>
             </div>

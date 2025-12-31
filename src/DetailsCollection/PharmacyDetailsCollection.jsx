@@ -1,20 +1,49 @@
-// src/Pages/PharmacyDetailsCollection.jsx
-
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
 import '../RegistrationFormsCommon.css'; 
 
+import API from "../api/api";
+
+
+import { supabase } from "../supabase";
+
+const uploadToSupabase = async (file, pendingId, folder) => {
+  const filePath = `${pendingId}/${folder}/${Date.now()}-${file.name}`;
+
+  const { error } = await supabase.storage
+    .from("pharmacy_documents")
+    .upload(filePath, file);
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("pharmacy_documents")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+
+
+
 const PharmacyDetailsCollectionPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [successMessage, setSuccessMessage] = useState('');
+
+
+    const [submitting, setSubmitting] = useState(false);
+
     
     const initialData = location.state?.userData || {}; 
     
     const [details, setDetails] = useState({
         pharmacyname: initialData.pharmacyname || '',
-        name: initialData.name || '',
-        
+        officialEmail: initialData.officialEmail || '',   
+         
+
+
         // Business Details
         businessRegNo: '',
         licenseNo: '',
@@ -28,7 +57,7 @@ const PharmacyDetailsCollectionPage = () => {
         postalCode: '',
         
         // Contact Details
-        officialEmail: '',
+        name: '', 
         phone: '',
         hotline: '',
         whatsapp: '',
@@ -82,6 +111,8 @@ const PharmacyDetailsCollectionPage = () => {
         { key: 'otcSale', label: 'OTC Medicine Sale' },
         { key: 'doctorChanneling', label: 'Doctor Channeling (If partnered)' },
     ];
+
+    
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
@@ -148,30 +179,80 @@ const PharmacyDetailsCollectionPage = () => {
     };
 
     
-    const handleFinalRegistration = (e) => {
-        e.preventDefault();
-        
-        const finalData = { ...details };
+    const handleFinalRegistration = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
 
-        console.log("Final Pharmacy Registration Data:", finalData);
+  
 
-        navigate('/registration-success', { state: { role: 'Pharmacy' } });
-    };
+  try {
+    const pendingId = localStorage.getItem("pharmacy_pendingId");
+    if (!pendingId) throw new Error("Missing pendingId");
 
-    // ⭐ UPDATED — use handleFileUpload instead of handleChange
-    const FileUploadRow = ({ name, label }) => (
-        <div className="input-row">
-            <label htmlFor={name}>{label}</label>
-            <input 
-                type="file" 
-                id={name} 
-                name={name} 
-                onChange={handleFileUpload} 
-                required 
-            />
-            {details[name] && <small style={{ color: '#18D23A', display: 'block' }}>File selected: {details[name].name}</small>}
-        </div>
-    );
+   const formData = new FormData();
+
+formData.append("pharmacyname", details.pharmacyname);
+formData.append("officialEmail", details.officialEmail);
+formData.append("phone", details.phone);
+formData.append("deliverySupport", details.deliverySupport);
+
+if (details.deliverySupport === "Yes") {
+  formData.append("deliveryRange", String(details.deliveryRange));
+}
+
+formData.append("name", details.name);
+formData.append("businessRegNo", details.businessRegNo);
+formData.append("licenseNo", details.licenseNo);
+formData.append("licenseExpiryDate", details.licenseExpiryDate);
+formData.append("address", details.address);
+formData.append("city", details.city);
+formData.append("province", details.province);
+formData.append("postalCode", details.postalCode);
+formData.append("latitude", String(details.latitude));
+formData.append("longitude", String(details.longitude));
+formData.append("openingTime", details.openingTime);
+formData.append("closingTime", details.closingTime);
+
+formData.append("operatingDays", JSON.stringify(details.operatingDays));
+formData.append("services", JSON.stringify(details.services));
+
+if (details.regCertificate) formData.append("regCertificate", details.regCertificate);
+if (details.pharmacistLicenseCopy) formData.append("pharmacistLicenseCopy", details.pharmacistLicenseCopy);
+
+if (details.ownerID) formData.append("ownerID", details.ownerID);
+
+
+    await API.post(`/pharmacy/${pendingId}/complete`, formData);
+
+    // ✅ Show success message instead of navigation
+    setSuccessMessage("✅ Registration submitted successfully! You will receive an approval email soon.");
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to submit pharmacy details");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+
+  const FileUploadRow = ({ name, label }) => (
+    <div className="input-row file-upload-row">
+        <label htmlFor={name}>{label}</label>
+        <input 
+            type="file" 
+            id={name} 
+            name={name} 
+            onChange={handleFileUpload} 
+            accept="application/pdf,image/*"
+        />
+        {details[name] && (
+            <small className="file-selected">File selected: {details[name].name}</small>
+        )}
+    </div>
+);
+
 
     return (
         <div className="registration-page details-collection-page">
@@ -183,8 +264,12 @@ const PharmacyDetailsCollectionPage = () => {
                     
                     <h3>Pharmacy Detail Collection</h3>
 
+                    {successMessage && (
+  <div className="success-message">{successMessage}</div>
+)}
+
+
                     <form onSubmit={handleFinalRegistration}>
-                        
                         {/* ✔ 1. Identity */}
                         <h3 style={{ marginBottom: '15px' }}>✅ Business Identity</h3>
                         
@@ -203,16 +288,15 @@ const PharmacyDetailsCollectionPage = () => {
                         </div>
                         
                         <div className="input-row">
-                            <label>Owner/Manager Name (from Step 1)</label>
-                            <input 
-                                type="text" 
-                                value={details.name} 
-                                readOnly={!edit.name}
-                                onChange={handleChange}
-                                name="name"
-                                className={!edit.name ? 'display-input' : ''}
-                                required
+                            <label>Official Email</label>
+                            <input
+                            type="text"
+                            value={details.officialEmail}
+                            onChange={handleChange}
+                            name="officialEmail"
+                            required
                             />
+
                             <span className="edit-icon" onClick={() => handleEditToggle('name')}>&#9998;</span>
                         </div>
 
@@ -257,8 +341,8 @@ const PharmacyDetailsCollectionPage = () => {
                         {/* 📞 Contact Details */}
                         <h3>📞 Contact Details</h3>
                         <div className="input-row required-field">
-                            <label htmlFor="officialEmail">Official Email (for notifications)</label>
-                            <input type="email" id="officialEmail" name="officialEmail" value={details.officialEmail} onChange={handleChange} required placeholder="Official Email" />
+                            <label htmlFor="officialEmail">Owner / Manager Name (for notifications)</label>
+                            <input type="text" id="OwnerName" name="name" value={details.name} onChange={handleChange} required placeholder="Owner / Manager Name" />
                         </div>
                         <div className="input-row required-field">
                             <label htmlFor="phone">Phone Number / Hotline</label>
@@ -397,29 +481,31 @@ const PharmacyDetailsCollectionPage = () => {
                         <h3>📸 Document Uploads</h3>
                         <FileUploadRow name="regCertificate" label="Pharmacy Registration Certificate (PDF/JPG)" />
                         <FileUploadRow name="pharmacistLicenseCopy" label="Pharmacist License Copy (PDF/JPG)" />
-                        <FileUploadRow name="frontPhoto" label="Front Photo of Pharmacy (JPG)" />
+                        
                         <FileUploadRow name="ownerID" label="Owner ID / NIC (PDF/JPG)" />
                         
                         {/* 🔍 Service Options */}
                         <h3>🔍 Pharmacy Service Options</h3>
-                        <div className="service-options">
-                            {serviceOptionsList.map(service => (
-                                <div key={service.key} className="service-item">
-                                    <input 
-                                        type="checkbox" 
-                                        id={service.key} 
-                                        checked={details.services[service.key]} 
-                                        onChange={() => handleServiceChange(service.key)} 
-                                    />
-                                    <label htmlFor={service.key}>{service.label}</label>
-                                </div>
-                            ))}
-                        </div>
+<ul className="service-options-list">
+    {serviceOptionsList.map(service => (
+        <li key={service.key}>
+            <input 
+                type="checkbox" 
+                id={service.key} 
+                checked={details.services[service.key]} 
+                onChange={() => handleServiceChange(service.key)} 
+            />
+            <label htmlFor={service.key}>{service.label}</label>
+        </li>
+    ))}
+</ul>
+
 
                         {/* SUBMIT */}
-                        <button type="submit" className="register-btn primary-btn">
-                            Complete Registration
-                        </button>
+                        <button type="submit" className="register-btn primary-btn" disabled={submitting}>
+  {submitting ? "Submitting..." : "Complete Registration"}
+</button>
+
                     </form>
                 </div>
             </div>

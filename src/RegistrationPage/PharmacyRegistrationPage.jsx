@@ -1,5 +1,3 @@
-// src/Pages/PharmacyRegistrationPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg'; 
@@ -8,17 +6,21 @@ import '../RegistrationFormsCommon.css';
 import API from "../api/api";
 
 // ⭐ IMPORT LOGIN MODAL
-import { LoginModal } from "../Components/UI/LoginModal";
+import { LoginModal } from "../Components/models/LoginModal";
+
+
 
 const PharmacyRegistrationPage = () => {
     const navigate = useNavigate();
 
+    const [continuing, setContinuing] = useState(false);
+    
     // ⭐ LOGIN MODAL STATE
     const [isLoginOpen, setIsLoginOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         pharmacyname: '', 
-        name: '', 
+        email: '', 
     });
 
     const handleChange = (e) => {
@@ -26,31 +28,40 @@ const PharmacyRegistrationPage = () => {
     };
 
     const handleContinue = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
+    setContinuing(true);
 
-        try {
-            const payload = {
-                pharmacyname: formData.pharmacyname,
-                name: formData.name,
-                createdAt: Date.now()
-            };
+    try {
+        const payload = {
+            pharmacyname: formData.pharmacyname,
+            officialEmail: formData.email,
+            createdAt: Date.now()
+        };
 
-            const res = await API.post("/pharmacy/step1", payload);
-            const pendingId = res.data?.pendingId;
-            if (!pendingId) throw new Error("No pendingId returned");
+        const res = await API.post("/pharmacy/step1", payload);
+        const pendingId = res.data?.pendingId;
+        if (!pendingId) throw new Error("No pendingId returned");
 
-            // store and navigate to details page
-            localStorage.setItem("pharmacy_pendingId", pendingId);
+        localStorage.setItem("pharmacy_pendingId", pendingId);
 
-            navigate('/pharmacy-details', {
-                state: { userData: { role: 'Pharmacy', pharmacyname: formData.pharmacyname, name: formData.name } }
-            });
+        navigate('/pharmacy-details', {
+            state: {
+                userData: {
+                    role: 'Pharmacy',
+                    pharmacyname: formData.pharmacyname,
+                    officialEmail: formData.email
+                }
+            }
+        });
 
-        } catch (err) {
-            console.error("pharmacy step1 failed", err);
-            alert("Failed to submit pharmacy step 1.");
-        }
-    };
+    } catch (err) {
+        console.error("pharmacy step1 failed", err);
+        alert("Failed to submit pharmacy step 1.");
+    } finally {
+        setContinuing(false);
+    }
+};
+
 
     return (
         <div className="registration-page">
@@ -85,13 +96,15 @@ const PharmacyRegistrationPage = () => {
                         </div>
                         
                         <div className="input-row">
-                            <label htmlFor="name">Owner/Manager Name</label>
-                            <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Owner / Manager Name" required />
+                            <label htmlFor="name">Official Email</label>
+                            <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} placeholder="Official Pharmacy Email" required />
                         </div>
                         
-                        <button type="submit" className="register-btn primary-btn" style={{ marginTop: '20px' }}>
-                            Continue
-                        </button>
+                        <button
+                         type="submit"className="register-btn primary-btn"style={{ marginTop: '20px' }}disabled={continuing}>
+    {continuing ? "Continuing..." : "Continue"}
+</button>
+
                         
                         <div className="separator">
                             <span>or</span>
