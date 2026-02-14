@@ -63,10 +63,17 @@ const [googleLoading, setGoogleLoading] = useState(false);
     else navigate("/PatientDashboard");
 
   } catch (err) {
-    console.error(err);
+  console.error(err);
+
+  if (err.response?.status === 403) {
+    alert(err.response.data.error); // 👈 pharmacy pending message
+  } else {
     alert(err.response?.data?.error || "Failed to login");
-    setEmailLoading(false);
   }
+
+  setEmailLoading(false);
+}
+
 };
 
 
