@@ -1,0 +1,270 @@
+/* src/PharmacyDashboard.css */
+
+/* --- Color Variables --- */
+:root {
+    --color-dark-green: #07741B;
+    --color-medium-green: #18D23A;
+    --color-light-green: #BCFFC6;
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+    --color-red: #EC1414;
+    --color-gray: #D9D9D9;
+    --color-accent-blue: #96A1FF;
+}
+
+/* --- Base Layout --- */
+.pharmacy-dashboard-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-light-green); 
+}
+
+/* --- Top Header Bar --- */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px;
+    background-color: var(--color-white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo-img {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+.header-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-dark-green);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.notification-bell, .profile-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+/* --- Navigation Bar (Green Strip below header) --- */
+.dashboard-nav {
+    background-color: var(--color-medium-green);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    color: var(--color-white);
+    padding: 15px 20px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.nav-link:hover, .nav-link.active {
+    background-color: var(--color-dark-green); 
+}
+
+/* --- Main Content Area --- */
+.dashboard-main-content {
+    padding: 30px;
+    flex-grow: 1;
+}
+
+.welcome-section {
+    margin-bottom: 30px;
+    color: var(--color-dark-green);
+}
+
+.welcome-section h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.welcome-section h2 {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: #555;
+}
+
+/* --- Card Grid Layout --- */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-dark-green);
+}
+
+.card-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-red); 
+}
+
+.card-content h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-medium-green);
+    margin: 0;
+}
+
+/* --- List/Table Section --- */
+.list-section, .table-section {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.list-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-gray);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.list-section-header h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-dark-green);
+    margin: 0;
+}
+
+.view-details-btn {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.view-details-btn:hover {
+    background-color: var(--color-dark-green);
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-gray);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.item-details p {
+    margin: 0;
+    font-weight: 500;
+    color: var(--color-black);
+}
+
+.item-details small {
+    color: #888;
+}
+
+/* --- Table Styles --- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-gray);
+    font-size: 0.95rem;
+}
+
+.data-table th {
+    background-color: var(--color-light-green);
+    color: var(--color-dark-green);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* --- Action Buttons in Tables/Lists --- */
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: opacity 0.3s;
+}
+
+.action-approve {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+}
+
+.action-reject {
+    background-color: var(--color-red);
+    color: var(--color-white);
+}
+
+.action-view {
+    background-color: var(--color-accent-blue);
+    color: var(--color-white);
+}
+
+.action-edit {
+    background-color: var(--color-dark-green);
+    color: var(--color-white);
+}

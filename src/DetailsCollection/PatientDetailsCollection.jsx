@@ -1,16 +1,42 @@
-// src/Pages/PatientDetailsCollection.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.jpeg';
 import UserIcon from '../assets/user.png'; 
 import '../RegistrationFormsCommon.css';
+import { supabase } from "../supabase";   
+import API from "../api/api";
+
+// Firebase imports
+import { auth } from "../Firebase"; 
+import { getAuth, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
+
 
 const PatientDetailsCollectionPage = () => {
+
+    
+  useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("User logged in:", user.email);
+    } else {
+      console.log("No user logged in");
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
+
+
     const navigate = useNavigate();
     const location = useLocation();
-    
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+
     const initialData = location.state?.userData || {}; 
+
+    const [loading, setLoading] = useState(false);
+
+    
     
     const [edit, setEdit] = useState({
         name: false,
@@ -38,7 +64,10 @@ const PatientDetailsCollectionPage = () => {
         bloodGroup: '',
         deliveryAddress: '',
         altContact: '',
-        profilePhoto: null,
+        profilePhoto: null,           
+        profilePhotoFile: null,       
+        profilePhotoPreview: null,    
+
         description: '',
         
         familyMembers: [
@@ -51,9 +80,13 @@ const PatientDetailsCollectionPage = () => {
     };
 
     const handleEditToggle = (field) => {
-        setEdit(prev => ({ ...prev, [field]: !prev[field] }));
-    };
-    
+  setEdit(prev => ({ ...prev, [field]: !prev[field] }));
+  setTimeout(() => {  // wait for render
+    if(field === 'name') nameRef.current?.focus();
+    if(field === 'email') emailRef.current?.focus();
+  }, 0);
+};
+
     const handlePasswordEdit = () => {
         alert("Password change functionality goes here! (New Password modal/fields)");
     };
@@ -86,14 +119,110 @@ const PatientDetailsCollectionPage = () => {
         }));
     };
 
-    const handleFinalRegistration = (e) => {
-        e.preventDefault();
-        
-        const finalData = { ...initialData, ...details };
-        console.log("Final Patient Registration Data:", finalData);
+   
+const handlePhotoSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-        navigate('/registration-success', { state: { role: 'Patient' } });
-    };
+  // Preview the image
+  const previewUrl = URL.createObjectURL(file);
+
+  setDetails(prev => ({
+    ...prev,
+    profilePhotoFile: file,       // Save file locally
+    profilePhotoPreview: previewUrl
+  }));
+};
+
+
+const handleFinalRegistration = async (e) => {
+  e.preventDefault();
+
+  setLoading(true);
+  const finalData = { ...initialData, ...details };
+  const uid = localStorage.getItem("patient_uid") || finalData.uid;
+  if (!uid) {
+    alert("Missing UID. Complete step 1 first.");
+    return;
+  }
+
+  try {
+    // 1️⃣ Upload profile photo if selected
+    if (details.profilePhotoFile) {
+      const file = details.profilePhotoFile;
+      const fileName = `patient_${uid}_${Date.now()}.${file.name.split('.').pop()}`;
+
+      const { data, error } = await supabase.storage
+        .from("patient-profile-pics")
+        .upload(fileName, file);
+
+      if (error) {
+        console.error(error);
+        alert("Photo upload failed!");
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("patient-profile-pics")
+        .getPublicUrl(fileName);
+
+      finalData.profilePhoto = urlData.publicUrl; // Set uploaded URL
+    }
+
+    // 2️⃣ Update `basic` node if name/email changed
+    const basicUpdates = {};
+    if (details.name && details.name !== initialData.name) basicUpdates.name = details.name;
+    if (details.email && details.email !== initialData.email) basicUpdates.email = details.email;
+
+    if (Object.keys(basicUpdates).length > 0) {
+      await API.patch(`/patient/${uid}/update-basic`, basicUpdates);
+    }
+
+    // 3️⃣ If email changed, update Firebase Auth email
+    if (details.email && details.email !== initialData.email) {
+      await API.patch(`/patient/${uid}/update-email`, { email: details.email });
+    }
+
+    // 4️⃣ Remove temporary file references
+    delete finalData.profilePhotoFile;
+    delete finalData.profilePhotoPreview;
+
+
+
+// 5️⃣ Save complete profile
+await API.post(`/patient/${uid}/complete`, finalData);
+
+// 6️⃣ Send Firebase verification email
+try {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (auth.currentUser) {
+    await sendEmailVerification(user);
+    alert("🎉 Registration Complete! Verification email sent.");
+  } else {
+    alert("Registration complete, but could not send verification email.");
+  }
+} catch (err) {
+  console.error("Email verification error:", err);
+}
+
+// 7️⃣ Navigate to verify-email page
+navigate('/VerifyEmail', { state: { email: details.email, uid } });
+
+
+
+
+  } catch (err) {
+    console.error("patient complete error:", err);
+    const msg = err?.response?.data?.error || err.message;
+    alert("Registration failed: " + msg);
+  }
+
+  finally {
+    setLoading(false); // ✅ stop loading
+  }
+};
 
     const FamilyMemberInputs = ({ member, index }) => (
         <div key={member.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
@@ -139,7 +268,9 @@ const PatientDetailsCollectionPage = () => {
                         {/* Profile Photo Section (Optional) */}
                         <div className="profile-section">
                             <div className="profile-image-wrapper">
-                                <img src={UserIcon} alt="Profile Placeholder" />
+                                <img src={details.profilePhotoPreview || UserIcon} alt="Profile" 
+                                />
+
                                 <label htmlFor="profilePhotoInput" className="camera-icon-overlay">
                                     &#128247; 
                                 </label>
@@ -149,10 +280,10 @@ const PatientDetailsCollectionPage = () => {
                                     name="profilePhoto" 
                                     accept="image/*" 
                                     style={{ display: 'none' }} 
-                                    onChange={(e) => setDetails({...details, profilePhoto: e.target.files[0]})}
+                                    onChange={handlePhotoSelect}
                                 />
                             </div>
-                            <small>Profile Photo (Optional)</small>
+                            <small>Profile Photo </small>
                         </div>
                         
                         {/* 1. Basic Information (Editable, Pre-filled, Not required for submission) */}
@@ -160,6 +291,7 @@ const PatientDetailsCollectionPage = () => {
                         <div className="input-row">
                             <label htmlFor="name">Full Name</label>
                             <input 
+                                ref={nameRef} 
                                 type="text" 
                                 id="name" 
                                 name="name" 
@@ -173,7 +305,8 @@ const PatientDetailsCollectionPage = () => {
 
                         <div className="input-row">
                             <label htmlFor="email">Email Address</label>
-                            <input 
+                            <input
+                                ref={nameRef}  
                                 type="email" 
                                 id="email" 
                                 name="email" 
@@ -183,6 +316,7 @@ const PatientDetailsCollectionPage = () => {
                                 className={!edit.email ? 'display-input' : ''}
                             />
                             <span className="edit-icon" onClick={() => handleEditToggle('email')}>&#9998;</span>
+                            
                         </div>
                         
                         <div className="input-row">
@@ -204,7 +338,7 @@ const PatientDetailsCollectionPage = () => {
                         </div>
                         
                         <div className="input-row">
-                            <label htmlFor="description">Description (Optional)</label>
+                            <label htmlFor="description">Description </label>
                             <textarea id="description" name="description" value={details.description} onChange={handleChange} placeholder="Tell us more about yourself..." rows="3" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }} />
                         </div>
 
@@ -243,7 +377,7 @@ const PatientDetailsCollectionPage = () => {
                             </select>
                         </div>
                         <div className="input-row">
-                            <label htmlFor="nic">NIC (Optional)</label>
+                            <label htmlFor="nic">NIC </label>
                             <input type="text" id="nic" name="nic" value={details.nic} onChange={handleChange} placeholder="National Identity Card" />
                         </div>
                         
@@ -299,9 +433,10 @@ const PatientDetailsCollectionPage = () => {
                         </div>
                         
                         {/* FINAL REGISTER BUTTON */}
-                        <button type="submit" className="register-btn primary-btn">
-                            Complete Registration
+                        <button type="submit" className="register-btn primary-btn" disabled={loading}>
+                            {loading ? "Registering..." : "Complete Registration"}
                         </button>
+
                     </form>
                 </div>
             </div>
