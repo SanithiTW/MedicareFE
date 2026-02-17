@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 // --- Firebase ---
 import { ref, set, push, onValue } from "firebase/database";
 import { firebaseConfig, auth, database } from "../../Firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 
 import { 
@@ -125,7 +126,20 @@ const pendingApprovalsData = [
 
 const AdminDashboard = () => {
 
-    
+    const updatePharmacyStatus = async (id, newStatus) => {
+  try {
+    await set(ref(database, `pharmacies/${id}/status`), {
+      value: newStatus,
+      updatedAt: Date.now()
+    });
+    alert(`Pharmacy ${newStatus} successfully`);
+  } catch (error) {
+    console.error("Error updating pharmacy:", error);
+    alert("Failed to update pharmacy status");
+  }
+};
+
+
 
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('home');
@@ -142,6 +156,9 @@ const AdminDashboard = () => {
     });
 
     const [doctorsData, setDoctorsData] = useState([]);
+    const [pharmaciesData, setPharmaciesData] = useState([]);
+    
+
     const adminEmailRef = useRef('');
 
     const adminNavLinks = [
@@ -228,6 +245,53 @@ await secondaryAuth.signOut();
     }
 };
 
+const handleAcceptPharmacy = async (pharmacy) => {
+  try {
+    if (!pharmacy.officialEmail) {
+      alert("Pharmacy email missing!");
+      return;
+    }
+
+    const tempPassword = generateRandomPassword();
+
+    // 1️⃣ Call backend to create Auth user with same UID
+    const response = await fetch("http://localhost:8080/api/admin/createPharmacy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        uid: pharmacy.id,           // Use the existing Realtime DB UID
+        email: pharmacy.officialEmail,
+        password: tempPassword
+      })
+    });
+
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error);
+
+    // 2️⃣ Update Realtime Database
+    await set(ref(database, `pharmacies/${pharmacy.id}`), {
+  ...pharmacy,
+  status: {
+      value: "accepted",
+      updatedAt: Date.now()
+  },
+  authUid: pharmacy.id,
+  role: pharmacy.role || "Pharmacy"
+});
+
+
+    // 3️⃣ Send password reset email
+    await sendPasswordResetEmail(secondaryAuth, pharmacy.officialEmail);
+    await secondaryAuth.signOut();
+
+    alert("Pharmacy accepted! Reset email sent.");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to accept pharmacy.");
+  }
+};
+
+
 
     // --- Fetch doctors + admin email safely ---
     useEffect(() => {
@@ -237,6 +301,39 @@ await secondaryAuth.signOut();
             adminEmailRef.current = user.email;
         }
     });
+
+    // 🔹 Fetch pharmacies
+const pharmaciesRef = ref(database, 'pharmacies');
+
+const unsubscribePharmacies = onValue(pharmaciesRef, snapshot => {
+  const data = snapshot.val() || {};
+
+  const pharmaciesArray = Object.entries(data).map(([id, pharmacy]) => ({
+  id,
+  ...pharmacy, // first spread the full object
+  pharmacyname: pharmacy.pharmacyname || pharmacy.name || 'N/A',
+  name: pharmacy.name || pharmacy.owner || 'N/A',
+  officialEmail: pharmacy.officialEmail || pharmacy.email || 'N/A',
+  licenseNo: pharmacy.licenseNo || pharmacy.license || 'N/A',
+  province: pharmacy.province || 'N/A',
+  phone: pharmacy.phone || 'N/A',
+  status: (() => {
+      if (!pharmacy.status) return 'pending';
+      if (typeof pharmacy.status === "string") return pharmacy.status.replace(/"/g, '').toLowerCase().trim();
+      if (typeof pharmacy.status === "object" && pharmacy.status.value) return pharmacy.status.value.toLowerCase().trim();
+      return 'pending';
+  })(),
+}));
+
+
+
+
+  console.log("🔥 Fetched pharmacies:", pharmaciesArray);
+  setPharmaciesData(pharmaciesArray);
+});
+
+
+
 console.log("🧪 Database object:", database);
 const doctorsRef = ref(database, 'doctors');
 console.log("📌 doctorsRef:", doctorsRef.toString());
@@ -258,13 +355,17 @@ const unsubscribe = onValue(
   (error) => {
     console.error("❌ onValue error:", error);
   }
+
+  
 );
 
 
     return () => {
-        unsubAuth();
-        unsubscribe();
-    };
+  unsubAuth();
+  unsubscribe();
+  unsubscribePharmacies();
+};
+
 }, []);
 
     
@@ -274,6 +375,16 @@ const unsubscribe = onValue(
     }
     return kpi;
 });
+
+const pendingPharmacies = pharmaciesData.filter(p => p.status === "pending");
+const acceptedPharmacies = pharmaciesData.filter(p => p.status === "accepted");
+const rejectedPharmacies = pharmaciesData.filter(p => p.status === "rejected");
+
+
+console.log("🔹 Pending pharmacies:", pendingPharmacies);
+console.log("🔹 Accepted pharmacies:", acceptedPharmacies);
+console.log("🔹 Rejected pharmacies:", rejectedPharmacies);
+
 
 
     // --- Tab Content Rendering ---
@@ -306,7 +417,8 @@ const unsubscribe = onValue(
                                 <div className="list-item" key={item.id}>
                                     <div className="item-details">
                                         <p>{item.name} ({item.id})</p>
-                                        <small className={`status-tag status-${item.status.toLowerCase()}`}>{item.type} | {item.date}</small>
+                                        <small className={`status-tag status-${item.status}`}>{item.type} | {item.date}</small>
+
                                     </div>
                                     <div>
                                         <button className="action-btn action-approve">Approve</button>
@@ -351,7 +463,10 @@ const unsubscribe = onValue(
         <td>{d.specialization || '-'}</td>
         <td>{d.license || '-'}</td>
         <td>{d.rating ?? 0} ⭐</td>
-        <td className={`status-text status-${(d.status || '').toLowerCase()}`}>{d.status || '-'}</td>
+        <td className={`status-text status-${p.status}`}>
+    {p.status}
+</td>
+
         <td>{d.createdBy || '-'}</td>
         <td>
           <button className="action-btn action-view">View Profile</button>
@@ -366,6 +481,142 @@ const unsubscribe = onValue(
                     </div>
                 );
 
+                case 'pharmacy':
+    return (
+        <div className="table-section">
+
+            {/* 🔴 Pending Pharmacies */}
+            <div className="list-section-header">
+                <h2>
+                  Pending Pharmacies ({pendingPharmacies.length})
+                </h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#FFE2E2'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Owner</th>
+                        <th>Email</th>
+                        <th>License</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {pendingPharmacies.length === 0 ? (
+                        <tr>
+                            <td colSpan="7" style={{ textAlign: 'center' }}>
+                                No pending pharmacies
+                            </td>
+                        </tr>
+                    ) : (
+                        pendingPharmacies.map(p => (
+                            <tr key={p.id}>
+                                <td>{p.pharmacyname}</td>
+                                <td>{p.name}</td>
+                                <td>{p.officialEmail}</td>
+                                <td>{p.licenseNo}</td>
+                                <td>{p.province}</td>
+                                <td>{p.phone}</td>
+                                <td>
+                                    <button 
+    className="action-btn action-approve"
+    onClick={() => {
+    if (window.confirm("Are you sure you want to ACCEPT this pharmacy?")) {
+        handleAcceptPharmacy(p);
+    }
+}}
+
+>
+    Accept
+</button>
+
+<button 
+    className="action-btn action-reject"
+    onClick={() => {
+        if (window.confirm("Are you sure you want to REJECT this pharmacy?")) {
+            updatePharmacyStatus(p.id, "rejected");
+        }
+    }}
+>
+    Reject
+</button>
+
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+
+
+            {/* 🟢 Accepted Pharmacies */}
+            <div className="list-section-header" style={{marginTop: "40px"}}>
+                <h2>Accepted Pharmacies ({acceptedPharmacies.length})</h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#BCFFC6'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Email</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {acceptedPharmacies.map(p => (
+                        <tr key={p.id}>
+                            <td>{p.pharmacyname}</td>
+                            <td>{p.officialEmail}</td>
+                            <td>{p.province}</td>
+                            <td>{p.phone}</td>
+                            <td className="status-text status-accepted">
+                                {p.status}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+
+            {/* ⚫ Rejected Pharmacies */}
+            <div className="list-section-header" style={{marginTop: "40px"}}>
+                <h2>Rejected Pharmacies ({rejectedPharmacies.length})</h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#FFD6D6'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Email</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rejectedPharmacies.map(p => (
+                        <tr key={p.id}>
+                            <td>{p.pharmacyname}</td>
+                            <td>{p.officialEmail}</td>
+                            <td>{p.province}</td>
+                            <td>{p.phone}</td>
+                            <td className="status-text status-rejected">
+                                {p.status}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+        </div>
+    );
+
+                
             default:
                 return null;
         }

@@ -35,6 +35,7 @@ const PharmacyRegistrationPage = () => {
         const payload = {
             pharmacyname: formData.pharmacyname,
             officialEmail: formData.email,
+             role: "Pharmacy", 
             createdAt: Date.now()
         };
 
