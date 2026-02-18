@@ -1,13 +1,23 @@
 // src/Pages/PharmacyDashboard.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
+
 import './PharmacyDashboard.css';
+
+import AddMedicinePopup from '../PharmacyPopups/AddMedicinePopup';
+import EditMedicinePopup from "../PharmacyPopups/EditMedicinePopup";
+
 
 // Import necessary images (Ensure these files exist in your assets folder)
 import Logo from '../../assets/Logo.jpeg'; 
 import BellIcon from '../../assets/Bell.png'; 
 import UserIcon from '../../assets/user.png'; 
 import HospitalIcon from '../../assets/HospitalIcon.png'; 
+
+import { auth, database } from "../../Firebase";
+import { ref, onValue, update, remove } from "firebase/database";
+
 
 // --- Mock Data ---
 const kpis = [
@@ -18,12 +28,6 @@ const kpis = [
     { title: 'Revenue (This Month)', value: 'Rs. 450K', icon: null, color: '#07741B' },
 ];
 
-const medicinesList = [
-    { id: 1, name: 'Paracetamol 500mg', category: 'Painkiller', stock: 120, price: 'Rs. 10', expiry: '2026-05-01' },
-    { id: 2, name: 'Amoxicillin 250mg', category: 'Antibiotic', stock: 25, price: 'Rs. 55', expiry: '2025-12-15' },
-    { id: 3, name: 'Atorvastatin 10mg', category: 'Cardiology', stock: 5, price: 'Rs. 80', expiry: '2026-11-01' }, // Low Stock
-];
-
 const pendingPrescriptions = [
     { id: '#P345', patient: 'A. Bandara', date: '10:30 AM', status: 'New' },
     { id: '#P344', patient: 'L. Perera', date: 'Yesterday', status: 'Reviewed' },
@@ -31,6 +35,9 @@ const pendingPrescriptions = [
 
 const PharmacyDashboard = () => {
     const [activeTab, setActiveTab] = useState('home');
+    const [medicines, setMedicines] = useState([]);
+    const [showAddPopup, setShowAddPopup] = useState(false);
+    const navigate = useNavigate();
 
     const navLinks = [
         { id: 'home', label: 'Overview', onClick: () => setActiveTab('home') },
@@ -39,8 +46,110 @@ const PharmacyDashboard = () => {
         { id: 'profile', label: 'Profile Management', onClick: () => setActiveTab('profile') },
         { id: 'growth', label: 'Business Growth Panel', onClick: () => setActiveTab('growth') },
     ];
+
+const [editingMedicineId, setEditingMedicineId] = useState(null);
+
     
-    // --- Reusable Layout Component Logic ---
+    // Logout function
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            localStorage.removeItem("auth_uid");
+            localStorage.removeItem("auth_role");
+            navigate("/");
+        } catch (err) {
+            console.error("Logout failed:", err);
+            alert("Logout failed: " + err.message);
+        }
+    };
+
+    const [currentUserUid, setCurrentUserUid] = useState(null);
+
+useEffect(() => {
+  const unsubscribeAuth = auth.onAuthStateChanged(user => {
+    if (user) {
+      setCurrentUserUid(user.uid);
+    }
+  });
+
+  return () => unsubscribeAuth();
+}, []);
+
+
+    useEffect(() => {
+  if (!currentUserUid) return; // wait until UID is known
+
+  const medicinesRef = ref(database, 'medicines');
+  const unsubscribe = onValue(
+    medicinesRef,
+    (snapshot) => {
+      const data = snapshot.val() || {};
+      console.log("All Medicines in DB:", data);
+
+      const pharmacyMeds = Object.entries(data)
+  .filter(([id, med]) => med.pharmacyUID === currentUserUid)
+  .map(([id, med]) => ({
+    id,
+    name: med.name || 'Unnamed',
+    stock: med.stock ?? 0,
+    price: med.price ?? '0.00',
+    expiry: med.expiry || 'N/A',
+    description: med.description || '',
+    imageUrl: med.imageUrl || '',
+    available: med.availability === "Available",
+  }));
+
+
+      console.log("Mapped Medicines for this pharmacy:", pharmacyMeds);
+      setMedicines(pharmacyMeds);
+    },
+    (error) => console.error("Error fetching medicines:", error)
+  );
+
+  return () => unsubscribe();
+}, [currentUserUid]);
+
+
+const handleDelete = (medId) => {
+  const confirmDelete = window.confirm("Are you sure you want to delete this medicine?");
+  if (!confirmDelete) return;
+
+  const medRef = ref(database, `medicines/${medId}`);
+
+  remove(medRef)
+    .then(() => {
+      console.log("Medicine deleted successfully");
+    })
+    .catch(err => console.error("Delete failed:", err));
+};
+
+
+
+    // Toggle availability
+ const handleToggleAvailability = (medId, currentStatus) => {
+  const medRef = ref(database, `medicines/${medId}`);
+
+  if (currentStatus) {
+    // If changing to Unavailable → set stock = 0
+    update(medRef, {
+      availability: "Unavailable",
+      stock: 0
+    })
+    .then(() => console.log("Set to Unavailable & stock reset to 0"))
+    .catch(err => console.error(err));
+  } else {
+    update(medRef, {
+      availability: "Available"
+    })
+    .then(() => console.log("Set to Available"))
+    .catch(err => console.error(err));
+  }
+};
+
+
+
+
+    // --- Dashboard Layout ---
     const DashboardLayout = ({ title, subtitle, navLinks, children }) => (
         <div className="pharmacy-dashboard-container">
             <div className="dashboard-header">
@@ -50,7 +159,7 @@ const PharmacyDashboard = () => {
                 </div>
                 <div className="header-right">
                     <img src={BellIcon} alt="Notifications" className="notification-bell" />
-                    <span style={{ color: '#555' }}>Log Out</span>
+                    <button className="pd-btn-text" onClick={handleLogout}>Log Out</button>
                     <img src={UserIcon} alt="Profile" className="profile-icon" />
                 </div>
             </div>
@@ -78,14 +187,12 @@ const PharmacyDashboard = () => {
         </div>
     );
 
-
-    // --- Tab Content Rendering ---
+    // --- Render Tabs ---
     const renderContent = () => {
         switch (activeTab) {
             case 'home':
                 return (
                     <>
-                        {/* KPI Cards */}
                         <div className="card-grid">
                             {kpis.map(kpi => (
                                 <div className="card" key={kpi.title}>
@@ -93,25 +200,22 @@ const PharmacyDashboard = () => {
                                         <div className="card-title" style={{ color: kpi.color }}>{kpi.title}</div>
                                         {kpi.icon && <img src={kpi.icon} alt="Icon" className="card-icon" style={{ opacity: 0.7 }} />}
                                     </div>
-                                    <div className="card-content">
-                                        <h3>{kpi.value}</h3>
-                                    </div>
+                                    <div className="card-content"><h3>{kpi.value}</h3></div>
                                 </div>
                             ))}
                         </div>
-                        
-                        {/* Low Stock Alerts & Prescriptions */}
+
                         <div className="card-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                             <div className="list-section">
                                 <div className="list-section-header">
                                     <h3>Low Stock Alerts</h3>
                                     <button className="view-details-btn" onClick={() => setActiveTab('medicine')}>Manage Stock</button>
                                 </div>
-                                {medicinesList.filter(m => m.stock < 10).map((m) => (
+                                {medicines.filter(m => m.stock < 10).map((m) => (
                                     <div className="list-item" key={m.id}>
                                         <div className="item-details">
                                             <p>{m.name}</p>
-                                            <small style={{ color: '#EC1414' }}>Stock: {m.stock} | Expires: {m.expiry}</small>
+                                            <small style={{ color: '#EC1414' }}>Stock: {m.stock} | Expires: {m.expiry || 'N/A'}</small>
                                         </div>
                                     </div>
                                 ))}
@@ -143,8 +247,16 @@ const PharmacyDashboard = () => {
                     <div className="table-section">
                         <div className="list-section-header">
                             <h3>Medicine Management</h3>
-                            <button className="view-details-btn">Add New Medicine</button>
+                            <button className="view-details-btn" onClick={() => setShowAddPopup(true)}>Add New Medicine</button>
+
+                            {showAddPopup && (
+                                <AddMedicinePopup
+                                    onClose={() => setShowAddPopup(false)}
+                                    onSuccess={() => setShowAddPopup(false)}
+                                />
+                            )}
                         </div>
+
                         <table className="data-table">
                             <thead>
                                 <tr>
@@ -153,26 +265,60 @@ const PharmacyDashboard = () => {
                                     <th>Stock</th>
                                     <th>Unit Price</th>
                                     <th>Expiry Date</th>
+                                    <th>Availability</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {medicinesList.map(m => (
-                                    <tr key={m.id}>
-                                        <td>{m.name}</td>
-                                        <td>{m.category}</td>
-                                        <td style={{ color: m.stock < 10 ? '#EC1414' : '#07741B' }}>{m.stock}</td>
-                                        <td>{m.price}</td>
-                                        <td>{m.expiry}</td>
-                                        <td>
-                                            <button className="action-btn action-edit">Edit</button>
-                                            <button className="action-btn action-reject">Delete</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
+                           <tbody>
+{medicines.map((m) => (
+  <tr key={m.id}>
+    <td>{m.name}</td>
+    <td>{m.category || "N/A"}</td>
+    <td style={{ color: m.stock < 10 ? "#EC1414" : "#07741B" }}>
+      {m.stock}
+    </td>
+    <td>{m.price}</td>
+    <td>{m.expiry}</td>
+    <td>
+      <button
+        className={`action-btn ${
+          m.available ? "action-available" : "action-unavailable"
+        }`}
+        onClick={() => handleToggleAvailability(m.id, m.available)}
+      >
+        {m.available ? "Available" : "Unavailable"}
+      </button>
+    </td>
+    <td>
+      <button
+        className="action-btn action-edit"
+        onClick={() => setEditingMedicineId(m.id)}
+      >
+        Edit
+      </button>
+      <button
+        className="action-btn action-reject"
+        onClick={() => handleDelete(m.id)}
+      >
+        Delete
+      </button>
+    </td>
+  </tr>
+))}
+</tbody>
+
+
                         </table>
-                        <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>*Features: Low stock alerts, Expiry reminders, Bulk stock update.</p>
+                        <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>
+                            *Features: Low stock alerts, Expiry reminders, Bulk stock update.*
+                        </p>
+                        {editingMedicineId && (
+  <EditMedicinePopup
+    medicineId={editingMedicineId}
+    onClose={() => setEditingMedicineId(null)}
+  />
+)}
+
                     </div>
                 );
 
@@ -191,9 +337,7 @@ const PharmacyDashboard = () => {
             case 'profile':
                 return (
                     <div className="list-section">
-                        <div className="list-section-header">
-                            <h3>Pharmacy Profile Management</h3>
-                        </div>
+                        <div className="list-section-header"><h3>Pharmacy Profile Management</h3></div>
                         <p style={{ padding: '10px' }}>**Details:** Pharmacy Name, Address, Contact, Owner, License Numbers.</p>
                         <p style={{ padding: '10px' }}>**Settings:** Change Password, Manage Working Hours (9:00 - 17:00), Upload Logo.</p>
                     </div>
@@ -202,9 +346,7 @@ const PharmacyDashboard = () => {
             case 'growth':
                 return (
                     <div className="list-section">
-                        <div className="list-section-header">
-                            <h3>Pharmacy Business Growth Panel</h3>
-                        </div>
+                        <div className="list-section-header"><h3>Pharmacy Business Growth Panel</h3></div>
                         <p style={{ padding: '10px' }}>**Insights:** Most demanded medicines, Monthly order trends, Sales comparison chart, Customer retention data.</p>
                         <p style={{ padding: '10px' }}>**Promotions:** Create discount coupons, Add promotional banners, Highlight featured medicines.</p>
                     </div>

@@ -1,0 +1,113 @@
+/* 🔹 Overlay */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* 🔹 Popup Container */
+.popup-container {
+  background: #ffffff;
+  width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* 🔹 Title */
+.popup-container h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* 🔹 Inputs & Textarea */
+.popup-container input,
+.popup-container textarea,
+.popup-container select {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+/* 🔹 Focus Effect */
+.popup-container input:focus,
+.popup-container textarea:focus,
+.popup-container select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+}
+
+/* 🔹 Textarea Specific */
+.popup-container textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+/* 🔹 Action Buttons Container */
+.popup-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+/* 🔹 Base Button Style */
+.popup-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 🔹 Save Button */
+.action-available {
+  background: #28a745;
+  color: white;
+  margin-right: 10px;
+}
+
+.action-available:hover {
+  background: #218838;
+}
+
+/* 🔹 Cancel Button */
+.action-reject {
+  background: #dc3545;
+  color: white;
+}
+
+.action-reject:hover {
+  background: #c82333;
+}
+
+/* 🔹 Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
