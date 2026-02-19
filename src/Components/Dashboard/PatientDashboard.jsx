@@ -133,7 +133,7 @@ export default function PatientDashboard() {
           <li onClick={() => alert("Set Reminder coming soon")}>
             Set Reminder
           </li>
-          <li onClick={() => alert("Order Medicine coming soon")}>
+          <li onClick={() => navigate("/pharmacy-store")}>
             Order Medicine
           </li>
           <li onClick={() => alert("Medicine Information coming soon")}>
@@ -374,39 +374,23 @@ export default function PatientDashboard() {
       {/* 🔹 ADDED: Doctor Listing */}
       {showDoctorResults && <DoctorListing filters={doctorFilters} />}
 
-      {/* Chat Wrapper */}
-      <div className="chat-wrapper" ref={chatWrapperRef}>
-        <button
-          className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
-          onClick={() => setChatOpen(true)}
-          aria-label="Open chat"
-        >
-          <img src={ChatbotIcon} alt="chat" />
-        </button>
 
-        <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
-          <MediChatBot onClose={() => setChatOpen(false)} />
-        </div>
-      </div>
-  
 
 
       {/* Chat Wrapper */}
-      <div className="chat-wrapper" ref={chatWrapperRef}>
-        {/* Floating Chatbot Button */}
-        <button
-          className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
-          onClick={() => setChatOpen(true)}
-          aria-label="Open chat"
-        >
-          <img src={ChatbotIcon} alt="chat" />
-        </button>
+<div className="chat-wrapper" ref={chatWrapperRef}>
+  <button
+    className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
+    onClick={() => setChatOpen(true)}
+    aria-label="Open chat"
+  >
+    <img src={ChatbotIcon} alt="chat" />
+  </button>
 
-        {/* Chatbot Panel */}
-        <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
-          <MediChatBot onClose={() => setChatOpen(false)} />
-        </div>
-      </div>
+  <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
+    <MediChatBot onClose={() => setChatOpen(false)} />
+  </div>
+</div>
     </div>
   );
 }

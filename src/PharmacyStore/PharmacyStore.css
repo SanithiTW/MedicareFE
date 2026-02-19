@@ -1,0 +1,171 @@
+:root {
+    --primary-green: #07741B;
+    --mid-green: #18D23A;
+    --light-bg: #BCFFC6;
+    --white: #FFFFFF;
+    --accent-red: #EC1414;
+    --shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.pharmacy-page {
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Header & Search Bar --- */
+.pharmacy-header {
+    background: var(--white);
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-logo { height: 50px; }
+.back-btn {
+    background: none; border: 1px solid var(--primary-green);
+    color: var(--primary-green); padding: 5px 15px;
+    border-radius: 20px; cursor: pointer; font-weight: 600; margin-left: 15px;
+}
+
+.search-container {
+    display: flex;
+    background: #f0f0f0;
+    border-radius: 30px;
+    padding: 5px;
+    border: 1px solid var(--mid-green);
+}
+
+.top-search-bar {
+    border: none; background: transparent; padding: 10px 20px;
+    width: 350px; outline: none; font-size: 0.95rem;
+}
+
+.search-pharmacy-btn {
+    background: var(--mid-green); color: white; border: none;
+    padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 600;
+}
+
+.main-cart-btn {
+    background: var(--primary-green); color: white; border: none;
+    padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+
+/* --- Layout Structure --- */
+.pharmacy-content {
+    display: flex;
+    padding: 30px;
+    gap: 30px;
+    flex-grow: 1;
+}
+
+.sidebar {
+    width: 280px;
+    background: var(--white);
+    border-radius: 15px;
+    padding: 20px;
+    height: fit-content;
+    box-shadow: var(--shadow);
+}
+
+.category-list { list-style: none; padding: 0; }
+.category-list li {
+    padding: 15px; border-bottom: 1px solid #eee;
+    cursor: pointer; transition: 0.3s; color: #444; font-weight: 500;
+}
+.category-list li:hover, .category-list li.active {
+    background: var(--light-bg); color: var(--primary-green); border-radius: 8px;
+}
+
+/* --- PRODUCT GRID (The Row Display) --- */
+.product-display { flex-grow: 1; }
+
+.product-grid {
+    display: grid;
+    /* This creates the row effect: 4 products per row on large screens */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+}
+
+.product-card {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 15px;
+    position: relative;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    height: 380px; /* Uniform height for all cards */
+}
+
+.product-card:hover { transform: translateY(-5px); }
+
+.offer-tag {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--accent-red); color: white;
+    padding: 4px 10px; font-size: 0.75rem; border-radius: 5px; font-weight: bold;
+    z-index: 1;
+}
+
+.card-image-wrapper {
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.card-image-wrapper img { max-height: 100%; max-width: 100%; object-fit: contain; }
+.placeholder-img { font-size: 0.8rem; color: #999; text-align: center; background: #f9f9f9; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+
+.prod-name { color: var(--primary-green); margin: 5px 0; font-size: 1.1rem; }
+.prod-pharmacies { font-size: 0.85rem; font-weight: 700; color: #666; margin-bottom: 5px; }
+.prod-short-desc { font-size: 0.8rem; color: #888; margin-bottom: 10px; line-height: 1.2; }
+.prod-price { color: var(--primary-green); font-size: 1.2rem; font-weight: 800; margin-top: auto; }
+
+.card-actions {
+    display: flex; gap: 10px; margin-top: 15px;
+}
+
+.btn-cart-sm, .btn-buy-sm {
+    flex: 1; padding: 8px; border-radius: 5px; border: none;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+
+.btn-cart-sm { background: #e8f5e9; color: var(--primary-green); }
+.btn-buy-sm { background: var(--accent-red); color: white; }
+
+/* --- POPUP MODAL --- */
+.overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+
+.popup-modal {
+    background: white; width: 700px; padding: 40px; border-radius: 20px; position: relative;
+}
+
+.modal-content-flex { display: flex; gap: 30px; }
+.modal-img-container { flex: 1; }
+.modal-img-container img { width: 100%; border-radius: 10px; }
+.modal-info { flex: 1.5; }
+
+.modal-price-tag { color: var(--primary-green); margin: 20px 0; font-size: 2rem; }
+.modal-buttons { display: flex; gap: 15px; }
+.modal-btn-cart, .modal-btn-buy {
+    flex: 1; padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;
+}
+.modal-btn-cart { background: var(--mid-green); color: white; }
+.modal-btn-buy { background: var(--accent-red); color: white; }
+
+.close-btn {
+    position: absolute; top: 15px; right: 20px; font-size: 2rem; border: none; background: none; cursor: pointer;
+}

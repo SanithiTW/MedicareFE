@@ -268,3 +268,114 @@
     background-color: var(--color-dark-green);
     color: var(--color-white);
 }
+
+/* --- Popup Overlay --- */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* --- Popup Content --- */
+.popup-content {
+  background-color: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  width: 500px;
+  max-width: 95%;
+  max-height: 90%;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Form Elements --- */
+.medicine-form label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  font-weight: 500;
+  color: #07741B;
+}
+
+.medicine-form input[type="text"],
+.medicine-form input[type="number"],
+.medicine-form input[type="date"],
+.medicine-form select,
+.medicine-form textarea {
+  margin-top: 5px;
+  padding: 8px 10px;
+  border: 1px solid #D9D9D9;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.medicine-form input:focus,
+.medicine-form select:focus,
+.medicine-form textarea:focus {
+  border-color: #18D23A;
+}
+
+/* --- Prescription Checkbox --- */
+.medicine-form input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #07741B;
+  cursor: pointer;
+}
+
+/* --- Image Preview --- */
+.image-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid #D9D9D9;
+}
+
+/* --- Buttons --- */
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-buttons button {
+  padding: 8px 18px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-buttons button[type="submit"] {
+  background-color: #18D23A;
+  color: #fff;
+}
+
+.form-buttons button[type="submit"]:disabled {
+  background-color: #BCFFC6;
+  cursor: not-allowed;
+}
+
+.form-buttons button[type="button"] {
+  background-color: #EC1414;
+  color: #fff;
+}

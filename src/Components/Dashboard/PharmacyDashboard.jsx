@@ -49,6 +49,8 @@ const PharmacyDashboard = () => {
 
 const [editingMedicineId, setEditingMedicineId] = useState(null);
 
+const [viewingMedicine, setViewingMedicine] = useState(null);
+
     
     // Logout function
     const handleLogout = async () => {
@@ -89,15 +91,17 @@ useEffect(() => {
       const pharmacyMeds = Object.entries(data)
   .filter(([id, med]) => med.pharmacyUID === currentUserUid)
   .map(([id, med]) => ({
-    id,
-    name: med.name || 'Unnamed',
-    stock: med.stock ?? 0,
-    price: med.price ?? '0.00',
-    expiry: med.expiry || 'N/A',
-    description: med.description || '',
-    imageUrl: med.imageUrl || '',
-    available: med.availability === "Available",
-  }));
+  id,
+  name: med.name || 'Unnamed',
+  stock: med.stock ?? 0,
+  price: med.price ?? '0.00',
+  expiry: med.expiryDate || 'N/A',
+  description: med.description || '',
+  imageUrl: med.imageUrl || '',
+  prescriptionRequired: med.prescriptionRequired || false,
+  availability: med.availability || "Available",
+  categories: med.categories || []
+}));
 
 
       console.log("Mapped Medicines for this pharmacy:", pharmacyMeds);
@@ -126,25 +130,26 @@ const handleDelete = (medId) => {
 
 
     // Toggle availability
- const handleToggleAvailability = (medId, currentStatus) => {
+ const handleToggleAvailability = async (medId, currentStatus) => {
   const medRef = ref(database, `medicines/${medId}`);
 
-  if (currentStatus) {
-    // If changing to Unavailable → set stock = 0
-    update(medRef, {
-      availability: "Unavailable",
-      stock: 0
-    })
-    .then(() => console.log("Set to Unavailable & stock reset to 0"))
-    .catch(err => console.error(err));
-  } else {
-    update(medRef, {
-      availability: "Available"
-    })
-    .then(() => console.log("Set to Available"))
-    .catch(err => console.error(err));
+  const newStatus =
+    currentStatus === "Available"
+      ? "Unavailable"
+      : "Available";
+
+  try {
+    await update(medRef, {
+      availability: newStatus,
+      stock: newStatus === "Unavailable" ? 0 : undefined
+    });
+
+    console.log("Availability updated");
+  } catch (err) {
+    console.error("Update failed:", err);
   }
 };
+
 
 
 
@@ -266,49 +271,99 @@ const handleDelete = (medId) => {
                                     <th>Unit Price</th>
                                     <th>Expiry Date</th>
                                     <th>Availability</th>
+                                    <th>Prescription</th>   
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                            <tbody>
-{medicines.map((m) => (
-  <tr key={m.id}>
-    <td>{m.name}</td>
-    <td>{m.category || "N/A"}</td>
-    <td style={{ color: m.stock < 10 ? "#EC1414" : "#07741B" }}>
-      {m.stock}
-    </td>
-    <td>{m.price}</td>
-    <td>{m.expiry}</td>
-    <td>
-      <button
-        className={`action-btn ${
-          m.available ? "action-available" : "action-unavailable"
-        }`}
-        onClick={() => handleToggleAvailability(m.id, m.available)}
-      >
-        {m.available ? "Available" : "Unavailable"}
-      </button>
-    </td>
-    <td>
-      <button
-        className="action-btn action-edit"
-        onClick={() => setEditingMedicineId(m.id)}
-      >
-        Edit
-      </button>
-      <button
-        className="action-btn action-reject"
-        onClick={() => handleDelete(m.id)}
-      >
-        Delete
-      </button>
-    </td>
-  </tr>
-))}
+  {medicines.map((m) => (
+    <tr key={m.id}>
+      <td>{m.name}</td>
+      <td>
+        {m.categories.length > 0 ? m.categories.join(", ") : "N/A"}
+      </td>
+      <td style={{ color: m.stock < 10 ? "#EC1414" : "#07741B" }}>
+        {m.stock}
+      </td>
+      <td>{m.price}</td>
+      <td>{m.expiry}</td>
+      <td>
+        <button
+          className={`action-btn ${
+            m.availability === "Available"
+              ? "action-available"
+              : "action-unavailable"
+          }`}
+          onClick={() => handleToggleAvailability(m.id, m.availability)}
+        >
+          {m.availability}
+        </button>
+      </td>
+      <td>
+        {m.prescriptionRequired ? (
+          <span style={{ color: "#EC1414", fontWeight: 600 }}>
+            Required
+          </span>
+        ) : (
+          <span style={{ color: "#07741B" }}>Not Required</span>
+        )}
+      </td>
+      <td>
+        <button
+          className="action-btn action-view"
+          onClick={() => setViewingMedicine(m)}
+        >
+          Details
+        </button>
+        <button
+          className="action-btn action-edit"
+          onClick={() => setEditingMedicineId(m.id)}
+        >
+          Edit
+        </button>
+        <button
+          className="action-btn action-reject"
+          onClick={() => handleDelete(m.id)}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
 </tbody>
 
 
+
                         </table>
+
+                        {viewingMedicine && (
+  <div className="popup-overlay" onClick={() => setViewingMedicine(null)}>
+    <div
+      className="popup-container"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h2>{viewingMedicine.name}</h2>
+
+      <p><strong>Description:</strong> {viewingMedicine.description}</p>
+      <p><strong>Price:</strong> Rs. {viewingMedicine.price}</p>
+      <p><strong>Stock:</strong> {viewingMedicine.stock}</p>
+      <p><strong>Expiry:</strong> {viewingMedicine.expiry}</p>
+      <p><strong>Categories:</strong> {viewingMedicine.categories.join(", ")}</p>
+      <p>
+        <strong>Prescription:</strong>{" "}
+        {viewingMedicine.prescriptionRequired ? "Required" : "Not Required"}
+      </p>
+
+      <button
+        className="action-btn action-reject"
+        onClick={() => setViewingMedicine(null)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
                         <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>
                             *Features: Low stock alerts, Expiry reminders, Bulk stock update.*
                         </p>

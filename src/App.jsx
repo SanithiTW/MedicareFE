@@ -15,6 +15,8 @@ import DoctorDashboard from './Components/Dashboard/DoctorDashboard';
 
 import VerifyEmail from './VerifyEmail/VerifyEmail';
 
+import PharmacyStore from './PharmacyStore/PharmacyStore';
+
 const App = () => {
   return (
     <Router>
@@ -34,6 +36,7 @@ const App = () => {
 
         <Route path="/VerifyEmail" element={<VerifyEmail />} />
         <Route path="/patientProfile" element={<PatientProfile />} />
+        <Route path="/pharmacy-store" element={<PharmacyStore />} />
       </Routes>
     </Router>
   );
