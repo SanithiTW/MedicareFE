@@ -53,8 +53,25 @@ const pendingApprovalsData = [
 
 
 // --- Layout Component ---
-    const DashboardLayout = ({ title, subtitle, navLinks, children, activeTab, onNavClick, onLogout, showDoctorModal,setShowDoctorModal,newDoctor, handleDoctorInputChange, handleCreateDoctor }) => (
+    const DashboardLayout = ({
+  title,
+  subtitle,
+  navLinks,
+  children,
+  activeTab,
+  onNavClick,
+  onLogout,
+  showDoctorModal,
+  setShowDoctorModal,
+  newDoctor,
+  handleDoctorInputChange,
+  handleCreateDoctor,
 
+  // 🔥 ADD THESE
+  showDoctorProfileModal,
+  setShowDoctorProfileModal,
+  selectedDoctor
+}) => (
         <div className="admin-dashboard-container">
         <div className="dashboard-header">
             <div className="header-left">
@@ -87,6 +104,49 @@ const pendingApprovalsData = [
                     <p className="subtitle">{subtitle}</p>
                 </div>
                 {children}
+
+                {/* --- Doctor Profile Modal --- */}
+{showDoctorProfileModal && selectedDoctor && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Doctor Profile</h2>
+
+      <div className="form-group">
+        <label>Name</label>
+        <input type="text" value={selectedDoctor.name || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Email</label>
+        <input type="text" value={selectedDoctor.email || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Specialization</label>
+        <input type="text" value={selectedDoctor.specialization || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>License</label>
+        <input type="text" value={selectedDoctor.license || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Rating</label>
+        <input type="text" value={`${selectedDoctor.rating ?? 0} ⭐`} readOnly />
+      </div>
+
+      <div className="modal-actions">
+        <button
+          className="action-btn action-reject"
+          onClick={() => setShowDoctorProfileModal(false)}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
                 {/* --- Doctor Modal --- */}
                 {showDoctorModal && (
@@ -126,6 +186,14 @@ const pendingApprovalsData = [
 
 const AdminDashboard = () => {
 
+    // 🔹 Doctor profile modal state
+const [showDoctorProfileModal, setShowDoctorProfileModal] = useState(false);
+const [selectedDoctor, setSelectedDoctor] = useState(null);
+const handleViewDoctor = (doctor) => {
+  setSelectedDoctor(doctor);
+  setShowDoctorProfileModal(true);
+};
+
     const updatePharmacyStatus = async (id, newStatus) => {
   try {
     await set(ref(database, `pharmacies/${id}/status`), {
@@ -147,13 +215,13 @@ const AdminDashboard = () => {
     // --- Modal & form state for new doctor ---
     const [showDoctorModal, setShowDoctorModal] = useState(false);
     const [newDoctor, setNewDoctor] = useState({
-        name: '',
-        specialization: '',
-        license: '',
-        email: '',
-        rating: 0,
-        status: 'Pending'
-    });
+    name: '',
+    specialization: '',
+    license: '',
+    email: '',
+    rating: 0,
+    role: 'Doctor' // ✅ add here
+});
 
     const [doctorsData, setDoctorsData] = useState([]);
     const [pharmaciesData, setPharmaciesData] = useState([]);
@@ -226,23 +294,61 @@ await secondaryAuth.signOut();
 
         // Save doctor in database
         await set(ref(database, `doctors/${doctorId}`), {
-            name: newDoctor.name,
-            specialization: newDoctor.specialization,
-            license: newDoctor.license,
-            email: newDoctor.email,
-            rating: Number(newDoctor.rating),
-            status: newDoctor.status,
-            createdBy: adminEmail, // ✅ now correct
-            generatedPassword: password
-        });
+    name: newDoctor.name,
+    specialization: newDoctor.specialization,
+    license: newDoctor.license,
+    email: newDoctor.email,
+    rating: Number(newDoctor.rating),
+    role: newDoctor.role,
+    createdBy: adminEmail,
+    generatedPassword: password,
+
+    // ⭐ VERY IMPORTANT
+    mustChangePassword: true,
+    status: {
+        value: "active",
+        updatedAt: Date.now()
+    }
+});
+
+await set(ref(database, `users/${doctorId}`), {
+    email: newDoctor.email,
+    role: newDoctor.role
+});
 
         alert(`Doctor created successfully!\nGenerated password: ${password}`);
         setShowDoctorModal(false);
-        setNewDoctor({ name: '', specialization: '', license: '', email: '', rating: 0, status: 'Pending' });
+        setNewDoctor({ name: '', specialization: '', license: '', email: '', rating: 0 });
     } catch (error) {
         console.error(error);
         alert("Failed to create doctor. See console for details.");
     }
+};
+
+const handleSuspendDoctor = async (doctorId) => {
+  try {
+    await set(ref(database, `doctors/${doctorId}/status`), {
+      value: "suspended",
+      updatedAt: Date.now()
+    });
+    alert("Doctor suspended successfully");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to suspend doctor");
+  }
+};
+
+const handleActivateDoctor = async (doctorId) => {
+  try {
+    await set(ref(database, `doctors/${doctorId}/status`), {
+      value: "active",
+      updatedAt: Date.now()
+    });
+    alert("Doctor activated successfully");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to activate doctor");
+  }
 };
 
 const handleAcceptPharmacy = async (pharmacy) => {
@@ -389,101 +495,190 @@ console.log("🔹 Rejected pharmacies:", rejectedPharmacies);
 
     // --- Tab Content Rendering ---
     const renderContent = () => {
-        switch (activeTab) {
-            case 'home':
-                return (
-                    <>
-                        <h2>System Overview</h2>
-                        <div className="card-grid">
-                            {kpisDisplay.map(kpi => (
-                                <div className="card" key={kpi.title} style={{ borderColor: kpi.color, backgroundColor: '#FFFFFF' }}>
-                                    <div className="card-header">
-                                        <div className="card-title" style={{ color: kpi.color }}>{kpi.title}</div>
-                                        {kpi.icon && <img src={kpi.icon} alt="Icon" className="card-icon" />}
-                                    </div>
-                                    <div className="card-content">
-                                        <h3>{kpi.value}</h3>
-                                    </div>
+    switch (activeTab) {
+        case 'home':
+            return (
+                <>
+                    <h2>System Overview</h2>
+                    <div className="card-grid">
+                        {kpisDisplay.map(kpi => (
+                            <div className="card" key={kpi.title} style={{ borderColor: kpi.color, backgroundColor: '#FFFFFF' }}>
+                                <div className="card-header">
+                                    <div className="card-title" style={{ color: kpi.color }}>{kpi.title}</div>
+                                    {kpi.icon && <img src={kpi.icon} alt="Icon" className="card-icon" />}
                                 </div>
-                            ))}
-                        </div>
-                        
-                        <div className="list-section">
-                            <div className="list-section-header">
-                                <h3>Pending Approvals (Quick View)</h3>
-                                <button className="view-details-btn action-approve" onClick={() => setActiveTab('approvals')}>View All</button>
+                                <div className="card-content">
+                                    <h3>{kpi.value}</h3>
+                                </div>
                             </div>
-                            {pendingApprovalsData.slice(0, 3).map((item) => (
-                                <div className="list-item" key={item.id}>
-                                    <div className="item-details">
-                                        <p>{item.name} ({item.id})</p>
-                                        <small className={`status-tag status-${item.status}`}>{item.type} | {item.date}</small>
-
-                                    </div>
-                                    <div>
-                                        <button className="action-btn action-approve">Approve</button>
-                                        <button className="action-btn action-reject">Reject</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                );
-
-            case 'doctor':
-                return (
-                    <div className="table-section">
-                        <div className="list-section-header">
-                            <h2>Doctor Management</h2>
-                            <button className="add-btn view-details-btn" onClick={() => setShowDoctorModal(true)}>Add New Doctor</button>
-                        </div>
-                        <table className="data-table">
-                            <thead>
-                                <tr style={{backgroundColor: '#BCFFC6'}}>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Specialization</th>
-                                    <th>License</th>
-                                    <th>Rating</th>
-                                    <th>Status</th>
-                                    <th>Created By</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-  {doctorsData.length === 0 ? (
-    <tr>
-      <td colSpan="8" style={{ textAlign: 'center' }}>No doctors found</td>
-    </tr>
-  ) : (
-    doctorsData.map(d => (
-      <tr key={d.id}>
-        <td>{d.name || '-'}</td>
-        <td>{d.email || '-'}</td>
-        <td>{d.specialization || '-'}</td>
-        <td>{d.license || '-'}</td>
-        <td>{d.rating ?? 0} ⭐</td>
-        <td className={`status-text status-${p.status}`}>
-    {p.status}
-</td>
-
-        <td>{d.createdBy || '-'}</td>
-        <td>
-          <button className="action-btn action-view">View Profile</button>
-          <button className="action-btn action-suspend">Suspend</button>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
-
-                        </table>
+                        ))}
                     </div>
-                );
 
-                case 'pharmacy':
-    return (
-        <div className="table-section">
+                    <div className="list-section">
+                        <div className="list-section-header">
+                            <h3>Pending Approvals (Quick View)</h3>
+                            <button className="view-details-btn action-approve" onClick={() => setActiveTab('approvals')}>View All</button>
+                        </div>
+                        {pendingApprovalsData.slice(0, 3).map((item) => (
+                            <div className="list-item" key={item.id}>
+                                <div className="item-details">
+                                    <p>{item.name} ({item.id})</p>
+                                    <small className={`status-tag status-${item.status}`}>{item.type} | {item.date}</small>
+                                </div>
+                                <div>
+                                    <button className="action-btn action-approve">Approve</button>
+                                    <button className="action-btn action-reject">Reject</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+
+        case 'approvals':
+            return (
+                <div className="table-section">
+                    {/* 🔴 Pending Pharmacies */}
+                    <div className="list-section-header">
+                        <h2>Pending Pharmacies ({pendingPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#FFE2E2'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Owner</th>
+                                <th>Email</th>
+                                <th>License</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pendingPharmacies.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" style={{ textAlign: 'center' }}>No pending pharmacies</td>
+                                </tr>
+                            ) : (
+                                pendingPharmacies.map(p => (
+                                    <tr key={p.id}>
+                                        <td>{p.pharmacyname}</td>
+                                        <td>{p.name}</td>
+                                        <td>{p.officialEmail}</td>
+                                        <td>{p.licenseNo}</td>
+                                        <td>{p.province}</td>
+                                        <td>{p.phone}</td>
+                                        <td>
+                                            <button 
+                                                className="action-btn action-approve"
+                                                onClick={() => {
+                                                    if (window.confirm("Accept this pharmacy?")) handleAcceptPharmacy(p);
+                                                }}
+                                            >Accept</button>
+                                            <button 
+                                                className="action-btn action-reject"
+                                                onClick={() => {
+                                                    if (window.confirm("Reject this pharmacy?")) updatePharmacyStatus(p.id, "rejected");
+                                                }}
+                                            >Reject</button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+
+                    {/* 🟢 Accepted Pharmacies */}
+                    <div className="list-section-header" style={{marginTop: "40px"}}>
+                        <h2>Accepted Pharmacies ({acceptedPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#BCFFC6'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {acceptedPharmacies.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className="status-text status-accepted">{p.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* ⚫ Rejected Pharmacies */}
+                    <div className="list-section-header" style={{marginTop: "40px"}}>
+                        <h2>Rejected Pharmacies ({rejectedPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#FFD6D6'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rejectedPharmacies.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className="status-text status-rejected">{p.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+
+        case 'pharmacy':
+            return (
+                <div className="table-section">
+                    <div className="list-section-header">
+                        <h2>Pharmacy Management</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#F0F0F0'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pharmaciesData.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className={`status-text status-${p.status}`}>{p.status}</td>
+                                    <td>
+                                        <button className="action-btn action-view">Details</button>
+                                        <button className="action-btn action-suspend">Block</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="table-section">
 
             {/* 🔴 Pending Pharmacies */}
             <div className="list-section-header">
@@ -614,7 +809,94 @@ console.log("🔹 Rejected pharmacies:", rejectedPharmacies);
             </table>
 
         </div>
-    );
+                </div>
+
+                
+            );
+
+        
+
+
+            case 'doctor':
+                return (
+                    <div className="table-section">
+                        <div className="list-section-header">
+                            <h2>Doctor Management</h2>
+                            <button className="add-btn view-details-btn" onClick={() => setShowDoctorModal(true)}>Add New Doctor</button>
+                        </div>
+                        <table className="data-table">
+                            <thead>
+                                <tr style={{backgroundColor: '#BCFFC6'}}>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Specialization</th>
+                                    <th>License</th>
+                                    <th>Rating</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+  {doctorsData.length === 0 ? (
+    <tr>
+      <td colSpan="8" style={{ textAlign: 'center' }}>No doctors found</td>
+    </tr>
+  ) : (
+    doctorsData.map(d => (
+      <tr key={d.id}>
+        <td>{d.name || '-'}</td>
+        <td>{d.email || '-'}</td>
+        <td>{d.specialization || '-'}</td>
+        <td>{d.license || '-'}</td>
+        <td>{d.rating ?? 0} ⭐</td>
+        <td>{d.createdBy || '-'}</td>
+        <td className={`status-text status-${(d.status?.value || d.status || "active")}`}>
+  {(d.status?.value || d.status || "active")}
+</td>
+        <td>
+  <button
+    className="action-btn action-view"
+    onClick={() => handleViewDoctor(d)}
+  >
+    View Profile
+  </button>
+
+  {(d.status?.value || d.status) === "suspended" ? (
+    <button
+      className="action-btn action-approve"
+      onClick={() => {
+        if (window.confirm("Activate this doctor?")) {
+          handleActivateDoctor(d.id);
+        }
+      }}
+    >
+      Activate
+    </button>
+  ) : (
+    <button
+      className="action-btn action-suspend"
+      onClick={() => {
+        if (window.confirm("Suspend this doctor?")) {
+          handleSuspendDoctor(d.id);
+        }
+      }}
+    >
+      Suspend
+    </button>
+  )}
+</td>
+      </tr>
+    ))
+  )}
+</tbody>
+
+
+                        </table>
+                    </div>
+                );
+
+            
 
                 
             default:
@@ -635,6 +917,10 @@ console.log("🔹 Rejected pharmacies:", rejectedPharmacies);
         newDoctor={newDoctor}
         handleDoctorInputChange={handleDoctorInputChange}
         handleCreateDoctor={handleCreateDoctor} 
+
+        showDoctorProfileModal={showDoctorProfileModal}
+  setShowDoctorProfileModal={setShowDoctorProfileModal}
+  selectedDoctor={selectedDoctor}
 >
 
             {renderContent()}

@@ -4,7 +4,7 @@ import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
 
 // 🔹 ADDED
-import DoctorListing from "../../DoctorListing/DoctorListing";
+import DoctorList from "../../DoctorList/DoctorList";
 
 // 🔹 Firebase
 import { ref, get } from "firebase/database";
@@ -127,9 +127,9 @@ export default function PatientDashboard() {
             Channel Doctor
           </li>
           <li onClick={() => setShowDoctorResults(true)}>Doctor</li> {/* ✅ ADDED */}
-          <li onClick={() => alert("Nearest Pharmacy coming soon")}>
-            Nearest Pharmacy
-          </li>
+          <li onClick={() => navigate("/pharmacy-map")}>
+  Nearest Pharmacy
+</li>
           <li onClick={() => alert("Set Reminder coming soon")}>
             Set Reminder
           </li>
@@ -330,49 +330,48 @@ export default function PatientDashboard() {
   Search Doctor
 </h2>
 
-            <form
-              className="search-form vertical-form doctor-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setShowDoctorPopup(false);
-                setShowDoctorResults(true);
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Doctor Name"
-                onChange={(e) =>
-                  setDoctorFilters({ ...doctorFilters, name: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                placeholder="Specialization"
-                onChange={(e) =>
-                  setDoctorFilters({
-                    ...doctorFilters,
-                    specialization: e.target.value,
-                  })
-                }
-              />
-              <input
-                type="text"
-                placeholder="Time"
-                onChange={(e) =>
-                  setDoctorFilters({ ...doctorFilters, time: e.target.value })
-                }
-              />
-              <button type="submit" className="search-button">
-                Search Doctor
-              </button>
-            </form>
+           <form
+  className="search-form vertical-form doctor-form"
+  onSubmit={(e) => {
+    e.preventDefault();
+    setShowDoctorPopup(false);
+
+    // 🔹 Navigate to the doctor list page with filters
+    navigate("/doctor-list", {
+      state: { filters: doctorFilters },
+    });
+  }}
+>
+  <input
+    type="text"
+    placeholder="Doctor Name"
+    onChange={(e) =>
+      setDoctorFilters({ ...doctorFilters, name: e.target.value })
+    }
+  />
+  <input
+    type="text"
+    placeholder="Specialization"
+    onChange={(e) =>
+      setDoctorFilters({ ...doctorFilters, specialization: e.target.value })
+    }
+  />
+  <input
+    type="text"
+    placeholder="Time"
+    onChange={(e) =>
+      setDoctorFilters({ ...doctorFilters, time: e.target.value })
+    }
+  />
+  <button type="submit" className="search-button">
+    Search Doctor
+  </button>
+</form>
           </div>
         </div>
       )}
 
 
-      {/* 🔹 ADDED: Doctor Listing */}
-      {showDoctorResults && <DoctorListing filters={doctorFilters} />}
 
 
 

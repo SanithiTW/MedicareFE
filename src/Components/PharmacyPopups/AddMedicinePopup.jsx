@@ -48,7 +48,8 @@ const AddMedicinePopup = ({ onClose, onSuccess }) => {
     warnings: "",
     manufacturer: "",
     expiryDate: "",
-    batchNumber: ""
+    batchNumber: "",
+    deliveryFee: "",
   });
 
   const [imagePreview, setImagePreview] = useState(null);
@@ -130,6 +131,8 @@ const AddMedicinePopup = ({ onClose, onSuccess }) => {
         manufacturer: details.manufacturer,
         expiryDate: details.expiryDate,
         batchNumber: details.batchNumber,
+        deliveryFee: details.deliveryFee || 0,
+        
       };
 
       const medicinesRef = ref(database, "medicines");
@@ -251,6 +254,11 @@ const AddMedicinePopup = ({ onClose, onSuccess }) => {
             Price
             <input type="text" name="price" value={details.price} onChange={handleChange} required />
           </label>
+
+          <label>
+            Delivery Fee (Rs)
+            <input type="number"name="deliveryFee"value={details.deliveryFee}onChange={handleChange}placeholder="Optional"min="0"/>
+            </label>
 
           <label>
             Discount / Offers

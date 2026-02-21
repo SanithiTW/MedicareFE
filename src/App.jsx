@@ -16,6 +16,11 @@ import DoctorDashboard from './Components/Dashboard/DoctorDashboard';
 import VerifyEmail from './VerifyEmail/VerifyEmail';
 
 import PharmacyStore from './PharmacyStore/PharmacyStore';
+import CheckoutPage from './Checkout/CheckoutPage';
+
+import PharmacyMap from './PharmacyMap/PharmacyMap';
+import DoctorList from "./DoctorList/DoctorList";
+
 
 const App = () => {
   return (
@@ -37,6 +42,10 @@ const App = () => {
         <Route path="/VerifyEmail" element={<VerifyEmail />} />
         <Route path="/patientProfile" element={<PatientProfile />} />
         <Route path="/pharmacy-store" element={<PharmacyStore />} />
+        <Route path="/CheckoutPage" element={<CheckoutPage />} />
+        <Route path="/pharmacy-map" element={<PharmacyMap />} />
+         <Route path="/doctor-list" element={<DoctorList />} />
+        
       </Routes>
     </Router>
   );

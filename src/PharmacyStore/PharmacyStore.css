@@ -57,6 +57,15 @@
     padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;
 }
 
+.cart-count {
+    background: var(--accent-red);
+    padding: 2px 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
 /* --- Layout Structure --- */
 .pharmacy-content {
     display: flex;
@@ -88,7 +97,6 @@
 
 .product-grid {
     display: grid;
-    /* This creates the row effect: 4 products per row on large screens */
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 25px;
 }
@@ -103,7 +111,7 @@
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    height: 380px; /* Uniform height for all cards */
+    height: 380px;
 }
 
 .product-card:hover { transform: translateY(-5px); }
@@ -168,4 +176,139 @@
 
 .close-btn {
     position: absolute; top: 15px; right: 20px; font-size: 2rem; border: none; background: none; cursor: pointer;
+}
+
+/* --- CART STYLING --- */
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cart-item p {
+    margin: 0;
+    min-width: 100px;
+}
+
+.cart-item button {
+    background: var(--primary-green);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.cart-item button:hover {
+    background: var(--mid-green);
+}
+
+.cart-popup-total {
+    text-align: right;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.cart-popup-close {
+    background: var(--accent-red);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+/* --- HEADER FIX --- */
+
+.pharmacy-header {
+    background: var(--white);
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background: #f0f0f0;
+    border-radius: 30px;
+    padding: 5px;
+    border: 1px solid var(--mid-green);
+}
+
+.top-search-bar {
+    border: none;
+    background: transparent;
+    padding: 10px 20px;
+    width: 350px;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.search-pharmacy-btn {
+    background: var(--mid-green);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* --- BUY ALL BUTTON --- */
+
+.buy-all-btn {
+    width: 100%;
+    background: var(--accent-red);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: 0.2s;
+}
+
+.buy-all-btn:hover {
+    background: #c91010;
+}
+/* --- CART BUY BUTTON --- */
+
+.cart-buy-btn {
+    background: var(--accent-red) !important;
+    color: white;
+}
+
+.cart-buy-btn:hover {
+    background: #c91010 !important;
 }

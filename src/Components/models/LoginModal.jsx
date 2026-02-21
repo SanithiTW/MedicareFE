@@ -5,8 +5,9 @@ import Logo from '../../assets/Logo.jpeg';
 import GoogleIcon from '../../assets/google.png'; 
 import API from '../../api/api';
 
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword , updatePassword} from "firebase/auth";
 import { auth } from "../../Firebase";
+
 
 
 export const LoginModal = ({ isOpen, onClose }) => {
@@ -21,7 +22,10 @@ export const LoginModal = ({ isOpen, onClose }) => {
   const [emailLoading, setEmailLoading] = useState(false);
 const [googleLoading, setGoogleLoading] = useState(false);
 
-
+const [showPasswordChange, setShowPasswordChange] = useState(false);
+const [newPassword, setNewPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [tempUid, setTempUid] = useState(null);
 
   useEffect(() => {
     // Load Google Identity Services script
@@ -48,7 +52,7 @@ const [googleLoading, setGoogleLoading] = useState(false);
 
   try {
     const res = await API.post("/../login/email", { email, password });
-    const { uid, role } = res.data;
+    const { uid, role, mustChangePassword } = res.data;
 
     if (!uid) throw new Error("Invalid login response");
 
@@ -57,11 +61,19 @@ const [googleLoading, setGoogleLoading] = useState(false);
     localStorage.setItem("auth_uid", uid);
     localStorage.setItem("auth_role", role || "Patient");
 
-    if (role === "Admin") navigate("/AdminDashboard");
-    else if (role === "Doctor") navigate("/DoctorDashboard");
-    else if (role === "Pharmacy") navigate("/PharmacyDashboard");
-    else navigate("/PatientDashboard");
+    // ⭐ FIRST LOGIN CHECK
+if (role === "Doctor" && mustChangePassword) {
+  setTempUid(uid);
+  setShowPasswordChange(true);
+  setEmailLoading(false);
+  return;
+}
 
+// normal navigation
+if (role === "Admin") navigate("/AdminDashboard");
+else if (role === "Doctor") navigate("/DoctorDashboard");
+else if (role === "Pharmacy") navigate("/PharmacyDashboard");
+else navigate("/PatientDashboard");
   } catch (err) {
   console.error(err);
 
@@ -115,6 +127,43 @@ const [googleLoading, setGoogleLoading] = useState(false);
     navigate("/register-patient");
   } else if (role === "Pharmacy") {
     navigate("/register-pharmacy");
+  }
+};
+
+const handlePasswordChange = async () => {
+  try {
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert("User not authenticated");
+      return;
+    }
+
+    // 🔥 Update Firebase password
+    await updatePassword(user, newPassword);
+
+    // 🔥 Update database flag
+    await API.post("/../doctor/password-updated", {
+      uid: tempUid
+    });
+
+    alert("Password updated successfully!");
+
+    setShowPasswordChange(false);
+    navigate("/DoctorDashboard");
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update password");
   }
 };
 
@@ -193,6 +242,37 @@ const [googleLoading, setGoogleLoading] = useState(false);
           )}
         </form>
       </div>
+      {showPasswordChange && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Change Your Password</h2>
+      <p>This is your first login. Please set a new password.</p>
+
+      <input
+        type="password"
+        placeholder="New Password"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+      />
+
+      <input
+        type="password"
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+      />
+
+      <div className="modal-actions">
+        <button
+          className="action-btn action-approve"
+          onClick={handlePasswordChange}
+        >
+          Update Password
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
