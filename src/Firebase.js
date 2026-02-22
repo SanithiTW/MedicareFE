@@ -4,7 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAX4EA-gXGDkwV8DxUxrIRdzU-YdX2cI6Q",
+  apiKey: "AIzaSyA7oJX_PnMnZeyTFys7fy5jU598vtDZBFg",
   authDomain: "medicare-91a2f.firebaseapp.com",
   databaseURL: "https://medicare-91a2f-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "medicare-91a2f",

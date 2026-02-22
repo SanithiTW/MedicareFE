@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./DoctorListing.css";
+import "./DoctorSearch.css";
 import { ref, get } from "firebase/database";
 import { database } from "../Firebase";
 
@@ -12,30 +12,23 @@ const DoctorList = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 🔹 Get filters from navigation state
   const filters = location.state?.filters || {};
 
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // 🔹 State for selected doctor popup
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-   const [bookingDoctor, setBookingDoctor] = useState(null);
+  const [bookingDoctor, setBookingDoctor] = useState(null);
 
-  // 🔹 Fetch doctors from Firebase
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const doctorsRef = ref(database, "doctors");
-        const snapshot = await get(doctorsRef);
-
+        const snapshot = await get(ref(database, "doctors"));
         if (snapshot.exists()) {
           const data = snapshot.val();
           const doctorsArray = Object.keys(data).map((key) => {
             const doc = data[key];
 
-            // 🔹 Ensure workingHours & unavailable are arrays
             const workingHoursArray = Array.isArray(doc.workingHours)
               ? doc.workingHours
               : doc.workingHours
@@ -56,15 +49,11 @@ const DoctorList = () => {
             };
           });
 
-          // 🔹 Only show active doctors (not suspended)
-          const activeDoctors = doctorsArray.filter(
-            (doc) => doc.value !== "suspended"
-          );
-
+          const activeDoctors = doctorsArray.filter((doc) => doc.value !== "suspended");
           setDoctors(activeDoctors);
         }
-      } catch (error) {
-        console.error("Error fetching doctors:", error);
+      } catch (err) {
+        console.error("Error fetching doctors:", err);
       } finally {
         setLoading(false);
       }
@@ -73,24 +62,37 @@ const DoctorList = () => {
     fetchDoctors();
   }, []);
 
-  // 🔹 Apply filters from Search Form
-  const filteredDoctors = doctors.filter((dr) => {
-    const nameMatch =
-      !filters?.name ||
-      dr.name?.toLowerCase().includes(filters.name.toLowerCase());
+  // 🔹 Determine doctor availability if date/time search provided
+  const checkAvailability = (doc) => {
+    if (!filters.date || !filters.time) return null; // Only check if searching
 
+    const dayOfWeek = new Date(filters.date).toLocaleString("en-US", { weekday: "long" });
+    const time = filters.time;
+
+    // Check working hours
+    const working = doc.workingHours.find((wh) => wh.day === dayOfWeek);
+    if (!working) return false;
+
+    if (time < working.start || time > working.end) return false;
+
+    // Check unavailable hours
+    const unavailable = doc.unavailable.find((un) => un.day === dayOfWeek);
+    if (unavailable && time >= unavailable.start && time <= unavailable.end) return false;
+
+    return true;
+  };
+
+  const filteredDoctors = doctors.filter((dr) => {
+    const nameMatch = !filters.name || dr.name.toLowerCase().includes(filters.name.toLowerCase());
     const specializationMatch =
-      !filters?.specialization ||
-      dr.specialization
-        ?.toLowerCase()
-        .includes(filters.specialization.toLowerCase());
+      !filters.specialization ||
+      dr.specialization.toLowerCase().includes(filters.specialization.toLowerCase());
 
     return nameMatch && specializationMatch;
   });
 
   return (
     <div className="doctor-list-page">
-      {/* Header */}
       <header className="doctor-header">
         <div className="header-left">
           <img src={Logo} alt="Logo" className="header-logo" />
@@ -100,7 +102,6 @@ const DoctorList = () => {
         </div>
         <div className="header-right">
           <span className="user-name">Find Doctors</span>
-          <div className="mini-profile"></div>
         </div>
       </header>
 
@@ -117,61 +118,71 @@ const DoctorList = () => {
             {filteredDoctors.length === 0 ? (
               <p>No doctors found for your search.</p>
             ) : (
-              filteredDoctors.map((dr) => (
-                <div className="doctor-item-card" key={dr.id}>
-                  <div className="dr-profile-section">
-                    <div className="dr-image-container">
-                      <div className="dr-img-placeholder">
-                        {dr.name?.charAt(0)}
+              filteredDoctors.map((dr) => {
+                const available = checkAvailability(dr);
+                return (
+                  <div className="doctor-item-card" key={dr.id}>
+                    <div className="dr-profile-section">
+                      <div className="dr-image-container">
+                        <div className="dr-img-placeholder">{dr.name?.charAt(0)}</div>
+                      </div>
+
+                      <div className="dr-details">
+                        <div className="dr-name-row">
+                          <h3>{dr.name}</h3>
+                          <span className="dr-rating">⭐ {dr.rating || "4.5"}</span>
+                        </div>
+
+                        <p className="dr-spec">{dr.specialization}</p>
+
+                        <div className="dr-meta">
+                          <div className="meta-tag appts">
+                            <strong>License:</strong> {dr.license}
+                          </div>
+                          {filters.date && filters.time ? (
+                            <div
+                              className={`meta-tag status ${
+                                available ? "online" : "away"
+                              }`}
+                            >
+                              ● {available ? "Available" : "Unavailable"}
+                            </div>
+                          ) : (
+                            <div
+                              className={`meta-tag status ${
+                                dr.value === "active" ? "online" : "away"
+                              }`}
+                            >
+                              ● {dr.value === "active" ? "Available" : dr.value}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="dr-details">
-                      <div className="dr-name-row">
-                        <h3>{dr.name}</h3>
-                        <span className="dr-rating">⭐ {dr.rating || "4.5"}</span>
-                      </div>
-
-                      <p className="dr-spec">{dr.specialization}</p>
-
-                      <div className="dr-meta">
-                        <div className="meta-tag appts">
-                          <strong>License:</strong> {dr.license}
-                        </div>
-
-                        <div
-                          className={`meta-tag status ${
-                            dr.value === "active" ? "online" : "away"
-                          }`}
-                        >
-                          ● {dr.value === "active" ? "Available" : dr.value}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="dr-action-section">
-                    <button
-                      className="view-profile-btn"
-                      onClick={() => setSelectedDoctor(dr)}
-                    >
-                      View Profile
-                    </button>
-                    <button
+                    <div className="dr-action-section">
+                      <button
+                        className="view-profile-btn"
+                        onClick={() => setSelectedDoctor(dr)}
+                      >
+                        View Profile
+                      </button>
+                      <button
   className="book-now-btn"
   onClick={() => setBookingDoctor(dr)}
 >
   Book Appointment
 </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
       </div>
 
-      {/* 🔹 Doctor Details Popup */}
+      {/* Doctor Details Popup */}
       {selectedDoctor && (
         <div
           className="modal-overlay"
@@ -232,10 +243,8 @@ const DoctorList = () => {
               <div>
                 <strong>Working Hours:</strong>
                 <ul>
-                  {selectedDoctor.workingHours.map((wh, index) => (
-                    <li key={index}>
-                      {wh.day}: {wh.start} - {wh.end}
-                    </li>
+                  {selectedDoctor.workingHours.map((wh, idx) => (
+                    <li key={idx}>{wh.day}: {wh.start} - {wh.end}</li>
                   ))}
                 </ul>
               </div>
@@ -245,10 +254,8 @@ const DoctorList = () => {
               <div>
                 <strong>Unavailable:</strong>
                 <ul>
-                  {selectedDoctor.unavailable.map((un, index) => (
-                    <li key={index}>
-                      {un.day}: {un.start} - {un.end}
-                    </li>
+                  {selectedDoctor.unavailable.map((un, idx) => (
+                    <li key={idx}>{un.day}: {un.start} - {un.end}</li>
                   ))}
                 </ul>
               </div>

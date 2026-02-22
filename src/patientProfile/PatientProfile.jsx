@@ -6,7 +6,7 @@ import UserIcon from '../assets/user.png';
 import HomeIcon from '../assets/Home.png';
 
 import { useNavigate } from 'react-router-dom';
-import { signOut } from "firebase/auth";
+import { signOut, sendPasswordResetEmail } from "firebase/auth";
 import { ref, get, update, set } from 'firebase/database';
 import { auth, database } from '../Firebase';
 import { supabase } from "../supabase"; 
@@ -101,7 +101,20 @@ const PatientProfile = () => {
         }
     };
 
-    
+    const handleChangePassword = async () => {
+    if (!patientData?.email) {
+        alert("Email not found for this user!");
+        return;
+    }
+
+    try {
+        await sendPasswordResetEmail(auth, patientData.email);
+        alert(`A password reset link has been sent to ${patientData.email}. Please check your email.`);
+    } catch (err) {
+        console.error("Failed to send reset email:", err);
+        alert("Failed to send password reset email. Please try again.");
+    }
+};
 
     const handleProfilePhotoSelect = (e) => {
         const file = e.target.files[0];
@@ -481,7 +494,12 @@ const filteredPrescriptions = documents.filter(doc =>
                     <div className="welcome-info">
                         <h2>Hello, {patientData.fullName}!</h2>
                         <p>Manage your account, health records, and family details here.</p>
-                        <button className="change-password-btn" onClick={() => alert("Redirecting to Change Password page...")}>Change Password</button>
+                        <button
+  className="change-password-btn"
+  onClick={handleChangePassword}
+>
+  Change Password
+</button>
                     </div>
                 </div>
 

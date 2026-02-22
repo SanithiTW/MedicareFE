@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
 
-// 🔹 ADDED
+
 import DoctorListing from "../../DoctorListing/DoctorListing";
+import DoctorSearch from "../../DoctorSearch/DoctorSearch";
 
 // 🔹 Firebase
 import { ref, get } from "firebase/database";
@@ -124,21 +125,17 @@ export default function PatientDashboard() {
             className="active"
             onClick={() => setShowDoctorPopup(true)} // ✅ ADDED
           >
-            Channel Doctor
+            Search Doctor
           </li>
-          <li onClick={() => setShowDoctorResults(true)}>Doctor</li> {/* ✅ ADDED */}
-          <li onClick={() => alert("Nearest Pharmacy coming soon")}>
-            Nearest Pharmacy
-          </li>
-          <li onClick={() => alert("Set Reminder coming soon")}>
-            Set Reminder
-          </li>
-          <li onClick={() => alert("Order Medicine coming soon")}>
+          <li onClick={() => navigate("/doctor-listing")}>Doctor</li>
+          <li onClick={() => navigate("/pharmacy-map")}>
+  Nearest Pharmacy
+</li>
+          
+          <li onClick={() => navigate("/pharmacy-store")}>
             Order Medicine
           </li>
-          <li onClick={() => alert("Medicine Information coming soon")}>
-            Medicine Information
-          </li>
+          
         </ul>
       </nav>
 
@@ -178,16 +175,7 @@ export default function PatientDashboard() {
           <button className="pd-btn small">View Details</button>
         </div>
 
-        <div className="status-card wider">
-          <div className="status-title">New Reminder</div>
-          <div className="status-icon">
-            <img src={ReminderImg} alt="reminder" />
-          </div>
-          <div className="status-body">
-            <div className="muted">3 reminders set</div>
-          </div>
-          <button className="pd-btn small">View Details</button>
-        </div>
+       
       </section>
 
 
@@ -279,68 +267,74 @@ export default function PatientDashboard() {
         </section>
       </main>
 
-      {/* 🔹 ADDED: Doctor Search Popup */}
+      {/* Doctor Search Popup */}
       {showDoctorPopup && (
         <div
-  className="modal-overlay"
-  onClick={() => setShowDoctorPopup(false)}
-  style={{
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.55)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 9999,
-  }}
->
-
-          
+          className="modal-overlay"
+          onClick={() => setShowDoctorPopup(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
           <div
-  className="modal-box"
-  onClick={(e) => e.stopPropagation()}
-  style={{
-    background: "#fff",
-    padding: "24px",
-    borderRadius: "12px",
-    position: "relative",
-    width: "320px",
-  }}
->
-
-
-
+            className="modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              padding: "24px",
+              borderRadius: "12px",
+              position: "relative",
+              width: "320px",
+            }}
+          >
             <button
-  onClick={() => setShowDoctorPopup(false)}
-  style={{
-    position: "absolute",
-    top: "12px",
-    right: "12px",
-    border: "none",
-    background: "transparent",
-    fontSize: "20px",
-    cursor: "pointer",
-  }}
->
-  ✕
-</button>
-
+              onClick={() => setShowDoctorPopup(false)}
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                border: "none",
+                background: "transparent",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
 
             <h2 style={{ marginBottom: "16px", textAlign: "center" }}>
-  Search Doctor
-</h2>
+              Search Doctor
+            </h2>
 
             <form
               className="search-form vertical-form doctor-form"
               onSubmit={(e) => {
                 e.preventDefault();
+
+                // Validate all fields
+                const { name, specialization, date, time } = doctorFilters;
+                if (!name || !specialization || !date || !time) {
+                  alert("All fields are required!");
+                  return;
+                }
+
                 setShowDoctorPopup(false);
-                setShowDoctorResults(true);
+
+                navigate("/doctor-search", {
+                  state: { filters: doctorFilters },
+                });
               }}
             >
               <input
                 type="text"
                 placeholder="Doctor Name"
+                value={doctorFilters.name}
                 onChange={(e) =>
                   setDoctorFilters({ ...doctorFilters, name: e.target.value })
                 }
@@ -348,6 +342,7 @@ export default function PatientDashboard() {
               <input
                 type="text"
                 placeholder="Specialization"
+                value={doctorFilters.specialization}
                 onChange={(e) =>
                   setDoctorFilters({
                     ...doctorFilters,
@@ -356,8 +351,15 @@ export default function PatientDashboard() {
                 }
               />
               <input
-                type="text"
-                placeholder="Time"
+                type="date"
+                value={doctorFilters.date}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, date: e.target.value })
+                }
+              />
+              <input
+                type="time"
+                value={doctorFilters.time}
                 onChange={(e) =>
                   setDoctorFilters({ ...doctorFilters, time: e.target.value })
                 }
@@ -371,42 +373,24 @@ export default function PatientDashboard() {
       )}
 
 
-      {/* 🔹 ADDED: Doctor Listing */}
-      {showDoctorResults && <DoctorListing filters={doctorFilters} />}
 
-      {/* Chat Wrapper */}
-      <div className="chat-wrapper" ref={chatWrapperRef}>
-        <button
-          className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
-          onClick={() => setChatOpen(true)}
-          aria-label="Open chat"
-        >
-          <img src={ChatbotIcon} alt="chat" />
-        </button>
 
-        <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
-          <MediChatBot onClose={() => setChatOpen(false)} />
-        </div>
-      </div>
-  
 
 
       {/* Chat Wrapper */}
-      <div className="chat-wrapper" ref={chatWrapperRef}>
-        {/* Floating Chatbot Button */}
-        <button
-          className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
-          onClick={() => setChatOpen(true)}
-          aria-label="Open chat"
-        >
-          <img src={ChatbotIcon} alt="chat" />
-        </button>
+<div className="chat-wrapper" ref={chatWrapperRef}>
+  <button
+    className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
+    onClick={() => setChatOpen(true)}
+    aria-label="Open chat"
+  >
+    <img src={ChatbotIcon} alt="chat" />
+  </button>
 
-        {/* Chatbot Panel */}
-        <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
-          <MediChatBot onClose={() => setChatOpen(false)} />
-        </div>
-      </div>
+  <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
+    <MediChatBot onClose={() => setChatOpen(false)} />
+  </div>
+</div>
     </div>
   );
 }
