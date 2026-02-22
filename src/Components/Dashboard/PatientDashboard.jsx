@@ -124,21 +124,17 @@ export default function PatientDashboard() {
             className="active"
             onClick={() => setShowDoctorPopup(true)} // ✅ ADDED
           >
-            Channel Doctor
+            Search Doctor
           </li>
           <li onClick={() => setShowDoctorResults(true)}>Doctor</li> {/* ✅ ADDED */}
           <li onClick={() => navigate("/pharmacy-map")}>
   Nearest Pharmacy
 </li>
-          <li onClick={() => alert("Set Reminder coming soon")}>
-            Set Reminder
-          </li>
+          
           <li onClick={() => navigate("/pharmacy-store")}>
             Order Medicine
           </li>
-          <li onClick={() => alert("Medicine Information coming soon")}>
-            Medicine Information
-          </li>
+          
         </ul>
       </nav>
 
@@ -178,16 +174,7 @@ export default function PatientDashboard() {
           <button className="pd-btn small">View Details</button>
         </div>
 
-        <div className="status-card wider">
-          <div className="status-title">New Reminder</div>
-          <div className="status-icon">
-            <img src={ReminderImg} alt="reminder" />
-          </div>
-          <div className="status-body">
-            <div className="muted">3 reminders set</div>
-          </div>
-          <button className="pd-btn small">View Details</button>
-        </div>
+       
       </section>
 
 

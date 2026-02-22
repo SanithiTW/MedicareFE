@@ -262,6 +262,9 @@ const handleViewDoctor = (doctor) => {
 
     const handleCreateDoctor = async () => {
     try {
+ console.log("🔥 MAIN AUTH USER:", auth.currentUser);
+    console.log("🔥 SECONDARY AUTH USER:", secondaryAuth.currentUser);
+
         if (!newDoctor.email) {
             alert("Please provide email for the doctor.");
             return;
@@ -289,11 +292,15 @@ const handleViewDoctor = (doctor) => {
     newDoctor.email,
     password
 );
+console.log("👤 Created doctor UID:", userCredential.user.uid);
 await secondaryAuth.signOut();
         const doctorId = userCredential.user.uid;
 
         // Save doctor in database
-        await set(ref(database, `doctors/${doctorId}`), {
+        try {
+  console.log("🚀 Writing doctor to:", `doctors/${doctorId}`);
+
+  await set(ref(database, `doctors/${doctorId}`), {
     name: newDoctor.name,
     specialization: newDoctor.specialization,
     license: newDoctor.license,
@@ -301,19 +308,28 @@ await secondaryAuth.signOut();
     rating: Number(newDoctor.rating),
     role: newDoctor.role,
     createdBy: adminEmail,
-    generatedPassword: password,
-
-    // ⭐ VERY IMPORTANT
     mustChangePassword: true,
     status: {
-        value: "active",
-        updatedAt: Date.now()
+      value: "active",
+      updatedAt: Date.now()
     }
-});
+  });
 
-await set(ref(database, `users/${doctorId}`), {
+  console.log("✅ Doctor write SUCCESS");
+} catch (err) {
+  console.error("❌ Doctor write FAILED:", err);
+  throw err;
+}
+
+
+await fetch("http://localhost:8080/api/admin/sendDoctorCredentials", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
     email: newDoctor.email,
-    role: newDoctor.role
+    password: password,
+    name: newDoctor.name
+  })
 });
 
         alert(`Doctor created successfully!\nGenerated password: ${password}`);
@@ -378,19 +394,29 @@ const handleAcceptPharmacy = async (pharmacy) => {
     await set(ref(database, `pharmacies/${pharmacy.id}`), {
   ...pharmacy,
   status: {
-      value: "accepted",
-      updatedAt: Date.now()
+    value: "accepted",
+    updatedAt: Date.now()
   },
   authUid: pharmacy.id,
-  role: pharmacy.role || "Pharmacy"
+  role: pharmacy.role || "Pharmacy",
+  mustChangePassword: true   // ⭐ ADD THIS
 });
 
+await fetch("http://localhost:8080/api/admin/sendPharmacyCredentials", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: pharmacy.officialEmail,
+    password: tempPassword,
+    name: pharmacy.pharmacyname || pharmacy.name
+  })
+});
 
-    // 3️⃣ Send password reset email
-    await sendPasswordResetEmail(secondaryAuth, pharmacy.officialEmail);
-    await secondaryAuth.signOut();
+   
 
-    alert("Pharmacy accepted! Reset email sent.");
+    
+
+    alert(`Pharmacy accepted successfully!\nPassword has been emailed to them.`);
   } catch (error) {
     console.error(error);
     alert("Failed to accept pharmacy.");
@@ -441,6 +467,7 @@ const unsubscribePharmacies = onValue(pharmaciesRef, snapshot => {
 
 
 console.log("🧪 Database object:", database);
+console.log("🌐 Database URL:", database.app.options.databaseURL);
 const doctorsRef = ref(database, 'doctors');
 console.log("📌 doctorsRef:", doctorsRef.toString());
 
