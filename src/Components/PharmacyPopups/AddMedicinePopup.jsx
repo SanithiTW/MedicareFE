@@ -115,8 +115,8 @@ const AddMedicinePopup = ({ onClose, onSuccess }) => {
         name: details.name,
         description: details.description,
         availability: details.availability,
-        stock: Number(details.stock),
-        price: details.price,
+        stock: Number(details.stock) || 0,
+        price: parseFloat(String(details.price).replace(/[^0-9.]/g, "")) || 0,
         discount: details.discount || null,
         notice: details.notice || null,
         categories: details.categories,
@@ -252,7 +252,7 @@ const AddMedicinePopup = ({ onClose, onSuccess }) => {
 
           <label>
             Price
-            <input type="text" name="price" value={details.price} onChange={handleChange} required />
+            <input type="number" name="price" value={details.price} onChange={handleChange} required />
           </label>
 
           <label>

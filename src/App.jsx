@@ -19,7 +19,8 @@ import PharmacyStore from './PharmacyStore/PharmacyStore';
 import CheckoutPage from './Checkout/CheckoutPage';
 
 import PharmacyMap from './PharmacyMap/PharmacyMap';
-import DoctorList from "./DoctorList/DoctorList";
+import DoctorListing from "./DoctorListing/DoctorListing";
+import DoctorSearch from "./DoctorSearch/DoctorSearch";
 
 
 const App = () => {
@@ -44,7 +45,8 @@ const App = () => {
         <Route path="/pharmacy-store" element={<PharmacyStore />} />
         <Route path="/CheckoutPage" element={<CheckoutPage />} />
         <Route path="/pharmacy-map" element={<PharmacyMap />} />
-         <Route path="/doctor-list" element={<DoctorList />} />
+        <Route path="/doctor-listing" element={<DoctorListing />} />
+        <Route path="/doctor-Search" element={<DoctorSearch />} />
         
       </Routes>
     </Router>

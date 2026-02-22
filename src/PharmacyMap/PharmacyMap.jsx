@@ -1,3 +1,5 @@
+// src/PharmacyMap.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
 import { ref, onValue } from "firebase/database";
@@ -10,7 +12,7 @@ const containerStyle = {
   height: '100%'
 };
 
-const centerDefault = { lat: 6.0, lng: 80.0 }; // Default Sri Lanka center
+const centerDefault = { lat: 6.0, lng: 80.0 };
 
 const PharmacyMap = () => {
   const [pharmacies, setPharmacies] = useState([]);
@@ -19,12 +21,10 @@ const PharmacyMap = () => {
   const navigate = useNavigate();
   const mapRef = useRef(null);
 
-  // Load Google Maps
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA7oJX_PnMnZeyTFys7fy5jU598vtDZBFg" // Replace with your key
+    googleMapsApiKey: "AIzaSyA7oJX_PnMnZeyTFys7fy5jU598vtDZBFg"
   });
 
-  // Load pharmacies from Firebase
   useEffect(() => {
     const pharmaciesRef = ref(database, "pharmacies");
     onValue(pharmaciesRef, (snapshot) => {
@@ -41,14 +41,12 @@ const PharmacyMap = () => {
     });
   }, []);
 
-  // Filter pharmacies based on search term
   const filteredPharmacies = pharmacies.filter(ph =>
     ph.pharmacyname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ph.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ph.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Fit map bounds to all filtered pharmacies
   const onLoadMap = map => {
     mapRef.current = map;
     if (filteredPharmacies.length === 0) return;
@@ -62,9 +60,12 @@ const PharmacyMap = () => {
 
   if (!isLoaded) return <div>Loading Map...</div>;
 
+  const handleBuyItems = (pharmacy) => {
+    navigate("/pharmacy-store", { state: { pharmacy } });
+  };
+
   return (
     <div className="pharmacy-map-page">
-      {/* Header */}
       <header className="pharmacy-map-header">
         <button onClick={() => navigate(-1)}>← Back</button>
         <input
@@ -75,7 +76,6 @@ const PharmacyMap = () => {
         />
       </header>
 
-      {/* Map */}
       <div className="map-container">
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -101,7 +101,15 @@ const PharmacyMap = () => {
                 {selectedPharmacy.address && <p>📍 {selectedPharmacy.address}</p>}
                 {selectedPharmacy.city && <p>City: {selectedPharmacy.city}</p>}
                 {selectedPharmacy.phone && <p>📞 {selectedPharmacy.phone}</p>}
-                {selectedPharmacy.closingTime && <p>Closing Time: {selectedPharmacy.closingTime}</p>}
+                {selectedPharmacy.closingTime && <p>⏰ Closes at: {selectedPharmacy.closingTime}</p>}
+                {selectedPharmacy.deliverySupport && <p>🚚 Delivery: {selectedPharmacy.deliverySupport}</p>}
+           
+<button
+  className="buy-items-btn"
+  onClick={() => navigate("/pharmacy-store", { state: { selectedPharmacyFilter: selectedPharmacy } })}
+>
+  Buy Items
+</button>
               </div>
             </InfoWindow>
           )}

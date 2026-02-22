@@ -1,0 +1,121 @@
+:root {
+    --primary-green: #07741B;
+    --mid-green: #18D23A;
+    --light-bg: #BCFFC6;
+    --white: #FFFFFF;
+    --accent-red: #EC1414;
+    --text-dark: #333;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.doctor-list-page {
+    background-color: var(--light-bg);
+    min-height: 100vh;
+}
+
+/* --- Header --- */
+.doctor-header {
+    background: var(--white);
+    padding: 12px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-logo { height: 45px; }
+
+.back-btn {
+    background: none; border: 1px solid var(--primary-green);
+    color: var(--primary-green); padding: 6px 15px;
+    border-radius: 20px; cursor: pointer; font-weight: 600; margin-left: 15px;
+}
+
+.header-search input {
+    width: 450px; padding: 10px 20px; border-radius: 25px;
+    border: 1px solid var(--mid-green); outline: none;
+}
+
+.header-right { display: flex; align-items: center; gap: 15px; }
+.mini-profile { 
+    width: 35px; height: 35px; background: #ddd; border-radius: 50%; 
+}
+
+/* --- Content Layout --- */
+.doctor-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.list-controls { margin-bottom: 25px; color: var(--primary-green); }
+.list-controls h2 { font-size: 1.8rem; margin-bottom: 5px; }
+.list-controls p { color: #555; }
+
+/* --- Doctor Item Card --- */
+.doctors-stack { display: flex; flex-direction: column; gap: 20px; }
+
+.doctor-item-card {
+    background: var(--white);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+    transition: 0.3s;
+}
+
+.doctor-item-card:hover { transform: scale(1.01); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+.dr-profile-section { display: flex; align-items: center; gap: 25px; }
+
+.dr-image-container img, .dr-img-placeholder {
+    width: 100px; height: 100px; border-radius: 50%; object-fit: cover;
+    border: 3px solid var(--mid-green);
+}
+
+.dr-img-placeholder {
+    background: var(--light-bg); color: var(--primary-green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; font-weight: bold;
+}
+
+.dr-details h3 { font-size: 1.4rem; color: var(--text-dark); margin: 0; }
+.dr-name-row { display: flex; align-items: center; gap: 15px; }
+.dr-rating { font-size: 0.9rem; font-weight: 600; color: #777; }
+
+.dr-spec { 
+    color: var(--primary-green); font-weight: 600; margin-bottom: 15px; 
+}
+
+.dr-meta { display: flex; gap: 15px; }
+
+.meta-tag {
+    padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;
+}
+
+.meta-tag.appts { background: #f0f0f0; color: #444; }
+.meta-tag.status.online { background: #e8f5e9; color: #2e7d32; }
+.meta-tag.status.away { background: #fff3e0; color: #ef6c00; }
+
+/* --- Buttons --- */
+.dr-action-section { display: flex; flex-direction: column; gap: 10px; width: 200px; }
+
+.book-now-btn {
+    background: var(--primary-green); color: white; border: none;
+    padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;
+    transition: 0.3s;
+}
+
+.book-now-btn:hover { background: var(--mid-green); }
+
+.view-profile-btn {
+    background: none; border: 1px solid #ddd; padding: 10px;
+    border-radius: 8px; cursor: pointer; color: #666; font-weight: 600;
+}
+
+.view-profile-btn:hover { background: #f9f9f9; border-color: #bbb; }

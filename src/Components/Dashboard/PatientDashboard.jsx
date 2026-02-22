@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
 
-// 🔹 ADDED
-import DoctorList from "../../DoctorList/DoctorList";
+
+import DoctorListing from "../../DoctorListing/DoctorListing";
+import DoctorSearch from "../../DoctorSearch/DoctorSearch";
 
 // 🔹 Firebase
 import { ref, get } from "firebase/database";
@@ -126,7 +127,7 @@ export default function PatientDashboard() {
           >
             Search Doctor
           </li>
-          <li onClick={() => setShowDoctorResults(true)}>Doctor</li> {/* ✅ ADDED */}
+          <li onClick={() => navigate("/doctor-listing")}>Doctor</li>
           <li onClick={() => navigate("/pharmacy-map")}>
   Nearest Pharmacy
 </li>
@@ -266,94 +267,107 @@ export default function PatientDashboard() {
         </section>
       </main>
 
-      {/* 🔹 ADDED: Doctor Search Popup */}
+      {/* Doctor Search Popup */}
       {showDoctorPopup && (
         <div
-  className="modal-overlay"
-  onClick={() => setShowDoctorPopup(false)}
-  style={{
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.55)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 9999,
-  }}
->
-
-          
+          className="modal-overlay"
+          onClick={() => setShowDoctorPopup(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
           <div
-  className="modal-box"
-  onClick={(e) => e.stopPropagation()}
-  style={{
-    background: "#fff",
-    padding: "24px",
-    borderRadius: "12px",
-    position: "relative",
-    width: "320px",
-  }}
->
-
-
-
+            className="modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              padding: "24px",
+              borderRadius: "12px",
+              position: "relative",
+              width: "320px",
+            }}
+          >
             <button
-  onClick={() => setShowDoctorPopup(false)}
-  style={{
-    position: "absolute",
-    top: "12px",
-    right: "12px",
-    border: "none",
-    background: "transparent",
-    fontSize: "20px",
-    cursor: "pointer",
-  }}
->
-  ✕
-</button>
-
+              onClick={() => setShowDoctorPopup(false)}
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                border: "none",
+                background: "transparent",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
 
             <h2 style={{ marginBottom: "16px", textAlign: "center" }}>
-  Search Doctor
-</h2>
+              Search Doctor
+            </h2>
 
-           <form
-  className="search-form vertical-form doctor-form"
-  onSubmit={(e) => {
-    e.preventDefault();
-    setShowDoctorPopup(false);
+            <form
+              className="search-form vertical-form doctor-form"
+              onSubmit={(e) => {
+                e.preventDefault();
 
-    // 🔹 Navigate to the doctor list page with filters
-    navigate("/doctor-list", {
-      state: { filters: doctorFilters },
-    });
-  }}
->
-  <input
-    type="text"
-    placeholder="Doctor Name"
-    onChange={(e) =>
-      setDoctorFilters({ ...doctorFilters, name: e.target.value })
-    }
-  />
-  <input
-    type="text"
-    placeholder="Specialization"
-    onChange={(e) =>
-      setDoctorFilters({ ...doctorFilters, specialization: e.target.value })
-    }
-  />
-  <input
-    type="text"
-    placeholder="Time"
-    onChange={(e) =>
-      setDoctorFilters({ ...doctorFilters, time: e.target.value })
-    }
-  />
-  <button type="submit" className="search-button">
-    Search Doctor
-  </button>
-</form>
+                // Validate all fields
+                const { name, specialization, date, time } = doctorFilters;
+                if (!name || !specialization || !date || !time) {
+                  alert("All fields are required!");
+                  return;
+                }
+
+                setShowDoctorPopup(false);
+
+                navigate("/doctor-search", {
+                  state: { filters: doctorFilters },
+                });
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Doctor Name"
+                value={doctorFilters.name}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, name: e.target.value })
+                }
+              />
+              <input
+                type="text"
+                placeholder="Specialization"
+                value={doctorFilters.specialization}
+                onChange={(e) =>
+                  setDoctorFilters({
+                    ...doctorFilters,
+                    specialization: e.target.value,
+                  })
+                }
+              />
+              <input
+                type="date"
+                value={doctorFilters.date}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, date: e.target.value })
+                }
+              />
+              <input
+                type="time"
+                value={doctorFilters.time}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, time: e.target.value })
+                }
+              />
+              <button type="submit" className="search-button">
+                Search Doctor
+              </button>
+            </form>
           </div>
         </div>
       )}

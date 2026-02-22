@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CheckoutPage.css';
 import Logo from '../assets/Logo.jpeg';
 import { useLocation } from "react-router-dom";
@@ -15,9 +15,7 @@ const CheckoutPage = () => {
     const [isUrgent, setIsUrgent] = useState(false);
     const [suggestedDeliveryTime, setSuggestedDeliveryTime] = useState("");
 
-    console.log("Passed Items:", passedItems);
-
-    // ✅ Patient Data
+    // Patient Data
     const mainPatient = {
         fullName: "Patient 02",
         phone: "0758579317",
@@ -28,123 +26,135 @@ const CheckoutPage = () => {
         district: "cxghgyuky",
         postalCode: "80092",
         province: "",
-        bloodGroup: "B+",
-        gender: "male",
-        dob: "2006-06-15"
     };
 
-    // ✅ Family Members
     const familyMembers = [
         { id: 1, name: "Patient 02" },
         { id: 2, name: "Patient 03" },
         { id: 3, name: "Patient 04" }
     ];
 
-    // ✅ Use items from previous page
+    // ✅ FIXED NUMBER STANDARDIZATION
     const [cartItems, setCartItems] = useState(
-        passedItems.map(item => {
-            // Price parsing
-            let price = 0;
-            if (item.price) {
-                const cleanedPrice = item.price.toString().replace(/[^0-9.]/g, "").trim();
-                price = parseFloat(cleanedPrice) || 0;
+    passedItems.map(item => {
+        const price = Number(parseFloat(String(item.price).replace(/[^0-9.]/g, ""))) || 0;
+        const qty = Number(item.qty || item.quantity || 1);
+        const deliveryFee = Number(parseFloat(String(item.deliveryFee).replace(/[^0-9.]/g, ""))) || 250;
+        const pharmacyname = item.pharmacyname || item.pharmacy || "Unknown Pharmacy";
+        const discountRaw = item.offer || item.discount || null;
+
+        let discountedPrice = price;
+        let discountText = "";
+        let freeGiftText = "";
+
+        if (discountRaw) {
+            const discountStr = String(discountRaw).trim();
+
+            if (discountStr.match(/\d+%/)) {
+                // % discount
+                const percent = parseFloat(discountStr) || 0;
+                discountedPrice = price - (price * percent / 100);
+                discountText = discountStr;
+            } else if (discountStr.match(/\d+/)) {
+                // numeric discount (Rs)
+                const numericDiscount = parseFloat(discountStr.replace(/[^0-9.]/g, "")) || 0;
+                discountedPrice = price - numericDiscount;
+                discountText = "Rs. " + numericDiscount.toFixed(2) + " off";
+            } else {
+                // free gift or text discount
+                discountedPrice = price; // price not changed
+                freeGiftText = discountStr;
             }
+        }
 
-            // Quantity
-            const qty = item.quantity || item.qty || 1;
+        discountedPrice = Math.max(discountedPrice, 0);
 
-            // Delivery fee parsing
-            let deliveryFee = 250; // default
-            if (item.deliveryFee) {
-                const cleanedFee = item.deliveryFee.toString().replace(/[^0-9.]/g, "").trim();
-                deliveryFee = parseFloat(cleanedFee) || 250;
-            }
+        return {
+            ...item,
+            price,
+            qty,
+            deliveryFee,
+            pharmacyname,
+            discountedPrice,
+            discountText,
+            freeGiftText
+        };
+    })
+);
 
-            // Pharmacy name fallback
-            const pharmacyname = item.pharmacyname || item.pharmacy || "Unknown Pharmacy";
+    // ✅ FIXED CALCULATIONS
+      const subtotal = cartItems.reduce(
+    (acc, item) => acc + (item.discountedPrice * item.qty), 0
+);
 
-            return { ...item, price, qty, deliveryFee, pharmacyname };
-        })
+    const discount = cartItems.reduce(
+        (acc, item) => acc + ((item.price - item.discountedPrice) * item.qty), 0
     );
 
-    // ✅ Dynamic Calculations
-    // Subtotal
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+    // ✅ DELIVERY ONLY ONCE
+    const deliveryFee = cartItems.length > 0
+        ? cartItems[0].deliveryFee
+        : 0;
 
-    // Discount calculation (handles percentage discounts)
-    const discount = cartItems.reduce((acc, item) => {
-        if (item.discount && item.discount.includes("%")) {
-            const percent = parseFloat(item.discount.replace(/[^0-9.]/g, "")) || 0;
-            return acc + (item.price * item.qty * percent) / 100;
-        } else if (item.discount) {
-            // fallback for fixed discount values
-            const numericDiscount = parseFloat(item.discount.replace(/[^0-9.]/g, "")) || 0;
-            return acc + numericDiscount;
-        }
-        return acc;
-    }, 0);
+    const total = Math.max(
+    subtotal + deliveryFee,
+    0
+);
 
-    // Delivery fee = sum of all items
-    const deliveryFee = cartItems.reduce((acc, item) => acc + (item.deliveryFee || 0), 0);
-
-    // Total
-    const total = subtotal + deliveryFee - discount;
-
-    // Check if any cart item requires prescription
-    const requiresPrescription = cartItems.some(item => item.prescriptionRequired === true);
+    const requiresPrescription = cartItems.some(
+        item => item.prescriptionRequired === true
+    );
 
     const [selectedPatient, setSelectedPatient] = useState(mainPatient.fullName);
     const [customPatientName, setCustomPatientName] = useState(mainPatient.fullName);
 
     const handleSandboxPayment = async () => {
-    if (!window.payhere) {
-        alert("PayHere SDK not loaded");
-        return;
-    }
+        if (!window.payhere) {
+            alert("PayHere SDK not loaded");
+            return;
+        }
 
-    const orderId = "ORDER_" + new Date().getTime();
-    const amountStr = total.toFixed(2);
+        const orderId = "ORDER_" + new Date().getTime();
+        const amountStr = total.toFixed(2);
 
-    // 🔹 Fetch hash from Node server
-    let hash = "";
-    try {
-        const res = await fetch(
-            `http://localhost:3001/get-payhere-hash?order_id=${orderId}&amount=${amountStr}&currency=LKR`
-        );
-        const data = await res.json();
-        hash = data.hash;
-    } catch (err) {
-        console.error("Error fetching hash:", err);
-        alert("Could not generate payment hash");
-        return;
-    }
-    
+        let hash = "";
+        try {
+            const res = await fetch(
+                `http://localhost:3001/get-payhere-hash?order_id=${orderId}&amount=${amountStr}&currency=LKR`
+            );
+            const data = await res.json();
+            hash = data.hash;
+        } catch (err) {
+            console.error("Error fetching hash:", err);
+            alert("Could not generate payment hash");
+            return;
+        }
 
-    const payment = {
-    sandbox: true,
-    merchant_id: SANDBOX_MERCHANT_ID, // now this works
-    return_url: "http://localhost:3000/checkout-success",
-    cancel_url: "http://localhost:3000/checkout-cancel",
-    notify_url: "http://localhost:3000/notify",
-    order_id: orderId,
-    items: "Medicine Order",
-    amount: amountStr,
-    currency: "LKR",
-    hash,
-    first_name: customPatientName,
-    last_name: "",
-    email: mainPatient.email,
-    phone: mainPatient.phone,
-    address: mainPatient.deliveryAddress,
-    city: mainPatient.district,
-    country: "Sri Lanka",
-    delivery_address: mainPatient.deliveryAddress,
-    delivery_city: mainPatient.district,
-    delivery_country: "Sri Lanka"
-};
+        const payment = {
+            sandbox: true,
+            merchant_id: SANDBOX_MERCHANT_ID,
+            return_url: "http://localhost:3000/checkout-success",
+            cancel_url: "http://localhost:3000/checkout-cancel",
+            notify_url: "http://localhost:3000/notify",
+            order_id: orderId,
+            items: "Medicine Order",
+            amount: amountStr,
+            currency: "LKR",
+            hash,
+            first_name: customPatientName,
+            last_name: "",
+            email: mainPatient.email,
+            phone: mainPatient.phone,
+            address: mainPatient.deliveryAddress,
+            city: mainPatient.district,
+            country: "Sri Lanka",
+            delivery_address: mainPatient.deliveryAddress,
+            delivery_city: mainPatient.district,
+            delivery_country: "Sri Lanka"
+        };
 
-    window.payhere.startPayment(payment);
-};
+        window.payhere.startPayment(payment);
+    };
 
     const handlePrescriptionUpload = (e) => {
         console.log("Prescription Uploaded:", e.target.files[0]);
@@ -168,46 +178,25 @@ const CheckoutPage = () => {
         setOrderPlaced(true);
     };
 
-    
-    if (orderPlaced) {
+    useEffect(() => {
+        if (!window.payhere) return;
 
-        React.useEffect(() => {
-
-    if (!window.payhere) return;
-
-    window.payhere.onCompleted = function onCompleted(orderId) {
-        console.log("Payment completed. OrderID:", orderId);
-        setOrderPlaced(true);
-    };
-
-    window.payhere.onDismissed = function onDismissed() {
-        console.log("Payment dismissed");
-        alert("Payment was cancelled.");
-    };
-
-    window.payhere.onError = function onError(error) {
-        console.log("Error:", error);
-        alert("Payment error occurred.");
-    };
-
-}, []);
-        return (
-            <div className="success-container">
-                <div className="success-card">
-                    <div className="success-icon">✔</div>
-                    <h2>Order Placed Successfully!</h2>
-                    <p>Your medicine is being prepared. You will receive an SMS update shortly.</p>
-                    <button className="back-to-store" onClick={() => window.location.href='/pharmacy'}>
-                        Return to Store
-                    </button>
-                </div>
-            </div>
-        );
-    }
+        window.payhere.onCompleted = function(orderId) {
+            console.log("Payment completed. OrderID:", orderId);
+            setOrderPlaced(true);
+        };
+        window.payhere.onDismissed = function() {
+            console.log("Payment dismissed");
+            alert("Payment was cancelled.");
+        };
+        window.payhere.onError = function(error) {
+            console.log("Error:", error);
+            alert("Payment error occurred.");
+        };
+    }, []);
 
     return (
         <div className="checkout-page">
-            {/* Header */}
             <header className="checkout-header">
                 <div className="header-left">
                     <img src={Logo} alt="MediCare" className="header-logo" />
@@ -219,37 +208,21 @@ const CheckoutPage = () => {
             </header>
 
             <div className="checkout-content">
-                {/* Left Side: Form */}
                 <form className="checkout-form" onSubmit={handlePlaceOrder}>
-                    {/* Delivery Information */}
+                    {/* Delivery Info */}
                     <section className="form-section">
                         <h3>1. Delivery Information</h3>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Enter Name</label>
-                                <input 
-                                    type="text" 
-                                    value={customPatientName} 
-                                    onChange={(e) => setCustomPatientName(e.target.value)} 
-                                    required 
-                                />
+                                <input type="text" value={customPatientName} onChange={(e) => setCustomPatientName(e.target.value)} required />
                             </div>
                             <div className="form-group">
                                 <label>Select Patient</label>
-                                <select 
-                                    value={selectedPatient} 
-                                    onChange={(e) => {
-                                        setSelectedPatient(e.target.value);
-                                        setCustomPatientName(e.target.value);
-                                    }} 
-                                    required
-                                >
-                                    {familyMembers.map(member => (
-                                        <option key={member.id} value={member.name}>{member.name}</option>
-                                    ))}
+                                <select value={selectedPatient} onChange={(e) => {setSelectedPatient(e.target.value); setCustomPatientName(e.target.value);}} required>
+                                    {familyMembers.map(member => <option key={member.id} value={member.name}>{member.name}</option>)}
                                 </select>
                             </div>
-                            
                         </div>
                         <div className="form-row">
                             <div className="form-group">
@@ -266,22 +239,13 @@ const CheckoutPage = () => {
                             <textarea defaultValue={mainPatient.deliveryAddress} rows="3" required></textarea>
                         </div>
                         <div className="form-row">
-                            <div className="form-group">
-                                <label>District</label>
-                                <input type="text" defaultValue={mainPatient.district} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Province</label>
-                                <input type="text" defaultValue={mainPatient.province} />
-                            </div>
-                            <div className="form-group">
-                                <label>Postal Code</label>
-                                <input type="text" defaultValue={mainPatient.postalCode} required />
-                            </div>
+                            <div className="form-group"><label>District</label><input type="text" defaultValue={mainPatient.district} required /></div>
+                            <div className="form-group"><label>Province</label><input type="text" defaultValue={mainPatient.province} /></div>
+                            <div className="form-group"><label>Postal Code</label><input type="text" defaultValue={mainPatient.postalCode} required /></div>
                         </div>
                     </section>
 
-                    {/* Mark as Urgent & Delivery Time */}
+                    {/* Urgent Delivery */}
                     <section className="form-section">
                         <h3>2. Urgent Delivery</h3>
                         <div className="form-row">
@@ -302,7 +266,6 @@ const CheckoutPage = () => {
                         </div>
                     </section>
 
-                    {/* Prescription Upload */}
                     {requiresPrescription && (
                         <section className="form-section">
                             <h3>3. Upload Doctor Prescription (Required)</h3>
@@ -311,95 +274,57 @@ const CheckoutPage = () => {
                         </section>
                     )}
 
-                    {/* Payment */}
+                    {/* Payment Method */}
                     <section className="form-section">
                         <h3>4. Payment Method</h3>
                         <div className="payment-options">
-                            <label className={`pay-card ${paymentMethod === 'card' ? 'selected' : ''}`}>
-                                <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
+                            <label className={`pay-card ${paymentMethod==='card'?'selected':''}`}>
+                                <input type="radio" name="payment" value="card" checked={paymentMethod==='card'} onChange={()=>setPaymentMethod('card')}/>
                                 <span>💳 Credit / Debit Card</span>
                             </label>
-                            <label className={`pay-card ${paymentMethod === 'cod' ? 'selected' : ''}`}>
-                                <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
+                            <label className={`pay-card ${paymentMethod==='cod'?'selected':''}`}>
+                                <input type="radio" name="payment" value="cod" checked={paymentMethod==='cod'} onChange={()=>setPaymentMethod('cod')}/>
                                 <span>💵 Cash on Delivery</span>
                             </label>
                         </div>
-
-                        {paymentMethod === 'card' && (
-                            <div className="card-details-grid">
-                                <div className="form-group full">
-                                    <label>Card Number</label>
-                                    <input type="text" placeholder="0000 0000 0000 0000" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Expiry</label>
-                                    <input type="text" placeholder="MM/YY" />
-                                </div>
-                                <div className="form-group">
-                                    <label>CVC</label>
-                                    <input type="text" placeholder="123" />
-                                </div>
-                            </div>
-                        )}
                     </section>
 
-                    {/* Confirm Button */}
-                    <button
-    type="button"
-    className="place-order-btn"
-    onClick={() => {
-        if (paymentMethod === "card") {
-            handleSandboxPayment();
-        } else {
-            setOrderPlaced(true); // COD
-        }
-    }}
->
-    Pay Rs. {total.toLocaleString()}
-</button>
+                    <button type="button" className="place-order-btn" onClick={()=>{
+                        if(paymentMethod==="card"){handleSandboxPayment();} else {setOrderPlaced(true);}
+                    }}>
+                        Pay Rs. {total.toLocaleString()}
+                    </button>
                 </form>
 
-                {/* Right Side: Order Summary */}
                 <aside className="order-summary">
                     <div className="summary-card">
                         <h3>Order Summary</h3>
                         <div className="summary-items">
-                            {cartItems.map(item => (
+                            {cartItems.map(item=>(
                                 <div className="summary-item" key={item.id}>
-                                    <div className="item-main">
-                                        <strong>{item.name} x {item.qty}</strong>
-                                        <small>Pharmacy: {item.pharmacyname}</small>
-                                        {item.offer && <span className="item-discount">{item.offer}</span>}
-                                    </div>
-                                    <span className="item-price">Rs. {(item.price * item.qty).toLocaleString()}</span>
-                                </div>
+    <div className="item-main">
+        <strong>{item.name} x {item.qty}</strong>
+        <small>Pharmacy: {item.pharmacyname}</small>
+        {item.discountText && <span className="item-discount">{item.discountText}</span>}
+        {item.freeGiftText && <span className="item-free">{item.freeGiftText}</span>}
+    </div>
+    <span className="item-price">
+        Rs. {(item.price * item.qty).toLocaleString(undefined,{
+            minimumFractionDigits:2,
+            maximumFractionDigits:2
+        })}
+    </span>
+</div>
                             ))}
                         </div>
-
-                        <hr />
-
+                        <hr/>
                         <div className="price-breakdown">
-                            <div className="price-row">
-                                <span>Subtotal</span>
-                                <span>Rs. {subtotal.toLocaleString()}</span>
-                            </div>
-                            <div className="price-row">
-                                <span>Delivery Fee</span>
-                                <span>Rs. {deliveryFee.toLocaleString()}</span>
-                            </div>
-                            <div className="price-row discount">
-                                <span>Offer Discount</span>
-                                <span>-Rs. {discount.toLocaleString()}</span>
-                            </div>
-                            <div className="price-row total">
-                                <span>Total Amount</span>
-                                <span>Rs. {total.toLocaleString()}</span>
-                            </div>
+                            <div className="price-row"><span>Subtotal</span><span>Rs. {subtotal.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                            <div className="price-row"><span>Delivery Fee</span><span>Rs. {deliveryFee.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                            <div className="price-row discount"><span>Offer Discount</span><span>-Rs. {discount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                            <div className="price-row total"><span>Total Amount</span><span>Rs. {total.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
                         </div>
-
-                        <div className="safety-note">
-                            🛡️ Your medical data is encrypted and secure.
-                        </div>
+                        <div className="safety-note">🛡️ Your medical data is encrypted and secure.</div>
                     </div>
                 </aside>
             </div>
