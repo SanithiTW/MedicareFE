@@ -3,6 +3,11 @@ import './CheckoutPage.css';
 import Logo from '../assets/Logo.jpeg';
 import { useLocation } from "react-router-dom";
 
+import { auth, database } from "../Firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, get, push, set } from "firebase/database";
+import { supabase } from "../supabase";
+
 // Sandbox Merchant ID for PayHere (replace with your actual sandbox ID)
 const SANDBOX_MERCHANT_ID = "1234122";
 
@@ -14,25 +19,13 @@ const CheckoutPage = () => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [suggestedDeliveryTime, setSuggestedDeliveryTime] = useState("");
+  const [prescriptionFile, setPrescriptionFile] = useState(null);
 
   // Patient Data
-  const mainPatient = {
-    fullName: "Patient 02",
-    phone: "0758579317",
-    altContact: "0758579318",
-    email: "P02@gmail.com",
-    deliveryAddress: "Pahaligewatta",
-    city: "",
-    district: "cxghgyuky",
-    postalCode: "80092",
-    province: "",
-  };
-
-  const familyMembers = [
-    { id: 1, name: "Patient 02" },
-    { id: 2, name: "Patient 03" },
-    { id: 3, name: "Patient 04" }
-  ];
+  const [mainPatient, setMainPatient] = useState(null);
+const [familyMembers, setFamilyMembers] = useState([]);
+const [selectedPatient, setSelectedPatient] = useState("");
+const [customPatientName, setCustomPatientName] = useState("");
 
   // ✅ FIXED NUMBER STANDARDIZATION
   const [cartItems, setCartItems] = useState(
@@ -103,8 +96,23 @@ const CheckoutPage = () => {
     item => item.prescriptionRequired === true
   );
 
-  const [selectedPatient, setSelectedPatient] = useState(mainPatient.fullName);
-  const [customPatientName, setCustomPatientName] = useState(mainPatient.fullName);
+  const uploadPrescription = async (file) => {
+  const user = auth.currentUser;
+  const filePath = `prescriptions/${user.uid}/${Date.now()}-${file.name}`;
+
+  const { error } = await supabase.storage
+    .from("patient-profile-pics")
+    .upload(filePath, file);
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("patient-profile-pics")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+ 
 
   const handleSandboxPayment = async () => {
     if (!window.payhere) {
@@ -140,13 +148,13 @@ const CheckoutPage = () => {
         hash,
         first_name: customPatientName,
         last_name: "",
-        email: mainPatient.email,
-        phone: mainPatient.phone,
-        address: mainPatient.deliveryAddress,
-        city: mainPatient.district,
+        email: mainPatient?.email || "",
+        phone: mainPatient?.phone || "",
+        address: mainPatient?.deliveryAddress || "",
+        city: mainPatient?.district || "",
         country: "Sri Lanka",
-        delivery_address: mainPatient.deliveryAddress,
-        delivery_city: mainPatient.district,
+        delivery_address: mainPatient?.deliveryAddress || "",
+        delivery_city: mainPatient?.district || "",
         delivery_country: "Sri Lanka"
     };
 
@@ -154,8 +162,8 @@ const CheckoutPage = () => {
 };
 
   const handlePrescriptionUpload = (e) => {
-    console.log("Prescription Uploaded:", e.target.files[0]);
-  };
+  setPrescriptionFile(e.target.files[0]);
+};
 
   const handleUrgencyChange = (e) => {
     const urgent = e.target.value === "yes";
@@ -173,29 +181,103 @@ const CheckoutPage = () => {
     setSuggestedDeliveryTime(`${day}/${month}/${year} --:${hours}:${minutes}`);
   };
 
-  const handlePlaceOrder = (e) => {
-    e.preventDefault();
+  const handlePlaceOrder = async (e) => {
+  e.preventDefault();
+
+  try {
+    const user = auth.currentUser;
+    if (!user) return alert("Please login");
+
+    let prescriptionUrl = "";
+
+    if (requiresPrescription) {
+      if (!prescriptionFile) {
+        return alert("Prescription is required.");
+      }
+
+      prescriptionUrl = await uploadPrescription(prescriptionFile);
+    }
+
+    const orderData = {
+      userId: user.uid,
+      patientName: selectedPatient,
+      medicines: cartItems,
+      pharmacyUID: cartItems[0]?.pharmacyUID || "",
+      pharmacyName: cartItems[0]?.pharmacyname || "",
+      subtotal,
+      deliveryFee,
+      discount,
+      total,
+      paymentMethod,
+      paymentStatus: paymentMethod === "card" ? "Paid" : "Pending",
+      prescriptionUrl: prescriptionUrl || null,
+      isUrgent,
+      suggestedDeliveryTime,
+      status: "Pending",
+      createdAt: Date.now()
+    };
+
+    await push(ref(database, "orders"), orderData);
+
     setOrderPlaced(true);
-  };
+    alert("Order placed successfully!");
 
-  useEffect(() => {
-    if (!window.payhere) return;
+  } catch (err) {
+    console.error(err);
+    alert("Error placing order");
+  }
+};
 
-    window.payhere.onCompleted = function(orderId) {
-      console.log("Payment completed. OrderID:", orderId);
-      setOrderPlaced(true);
-    };
 
-    window.payhere.onDismissed = function() {
-      console.log("Payment dismissed");
-      alert("Payment was cancelled.");
-    };
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    console.log("Checking user:", user);
 
-    window.payhere.onError = function(error) {
-      console.log("Error:", error);
-      alert("Payment error occurred.");
-    };
-  }, []);
+    if (!user) {
+      console.log("No logged user");
+      return;
+    }
+
+    try {
+      const snapshot = await get(ref(database, `patients/${user.uid}`));
+
+      if (!snapshot.exists()) {
+        console.log("No patient data found");
+        return;
+      }
+
+      const data = snapshot.val();
+
+      console.log("Fetched patient data:", data);
+
+      setMainPatient({
+  name: data.basic?.name || "",
+  phone: data.basic?.phone || "",
+  altContact: data.basic?.altContact || "",
+  deliveryAddress: data.profile?.deliveryAddress || "",
+  district: data.profile?.district || "",
+  province: data.profile?.province || "",
+  postalCode: data.profile?.postalCode || "",
+  email: user.email || ""
+});
+      const mainName = data.basic?.name || "";
+
+setSelectedPatient(mainName);
+setCustomPatientName(mainName);
+
+      const filteredFamily = (data.profile?.familyMembers|| []).filter(member =>
+        !["Patient 02", "Patient 03", "Patient 04"].includes(member.name)
+      );
+
+      setFamilyMembers(filteredFamily);
+
+    } catch (error) {
+      console.error("Error fetching patient data:", error);
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
 
   return (
     <div className="checkout-page">
@@ -230,51 +312,62 @@ const CheckoutPage = () => {
               <div className="form-group">
                 <label>Select Patient</label>
                 <select
-                  value={selectedPatient}
-                  onChange={(e) => {
-                    setSelectedPatient(e.target.value);
-                    setCustomPatientName(e.target.value);
-                  }}
-                  required
-                >
-                  {familyMembers.map(member => (
-                    <option key={member.id} value={member.name}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
+  value={selectedPatient}
+  onChange={(e) => {
+    setSelectedPatient(e.target.value);
+    setCustomPatientName(e.target.value);
+  }}
+  required
+>
+  {mainPatient && (
+    <option value={mainPatient.name}>{mainPatient.name}</option>
+  )}
+
+  {familyMembers.map(member => (
+    <option key={member.id} value={member.name}>
+      {member.name}
+    </option>
+  ))}
+</select>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>Phone</label>
-                <input type="tel" defaultValue={mainPatient.phone} required />
+                 <input
+  type="tel"
+  value={mainPatient?.phone || ""}
+  onChange={(e) =>
+    setMainPatient(prev => ({ ...prev, phone: e.target.value }))
+  }
+  required
+/>
               </div>
 
               <div className="form-group">
                 <label>Alternative Contact</label>
-                <input type="tel" defaultValue={mainPatient.altContact} />
+                <input type="tel" defaultValue={mainPatient?.altContact || ""} />
               </div>
             </div>
 
             <div className="form-group">
               <label>Delivery Address</label>
-              <textarea defaultValue={mainPatient.deliveryAddress} rows="3" required></textarea>
+              <textarea defaultValue={mainPatient?.deliveryAddress || ""} rows="3" required></textarea>
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label>District</label>
-                <input type="text" defaultValue={mainPatient.district} required />
+                <input type="text" defaultValue={mainPatient?.district || ""} required />
               </div>
               <div className="form-group">
                 <label>Province</label>
-                <input type="text" defaultValue={mainPatient.province} />
+                <input type="text" defaultValue={mainPatient?.province || ""} />
               </div>
               <div className="form-group">
                 <label>Postal Code</label>
-                <input type="text" defaultValue={mainPatient.postalCode} required />
+                <input type="text" defaultValue={mainPatient?.postalCode || ""} required />
               </div>
             </div>
           </section>
@@ -340,10 +433,31 @@ const CheckoutPage = () => {
             </div>
           </section>
 
-          <button type="button" className="place-order-btn" onClick={()=>{
-    if(paymentMethod==="card"){handleSandboxPayment();} else {setOrderPlaced(true);}
-}}>
-    Pay Rs. {total.toLocaleString()}
+         <button
+  type="button"
+  className="place-order-btn"
+  onClick={async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+
+  if (requiresPrescription && !prescriptionFile) {
+    alert("Prescription is required before proceeding.");
+    return;
+  }
+
+  if (paymentMethod === "card") {
+    handleSandboxPayment();
+  } else {
+    handlePlaceOrder(new Event("submit"));
+  }
+}}
+>
+  {paymentMethod === "cod"
+    ? `Place Order - Rs. ${total.toLocaleString()}`
+    : `Pay Rs. ${total.toLocaleString()}`}
 </button>
         </form>
 
