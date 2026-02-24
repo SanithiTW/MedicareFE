@@ -27,27 +27,14 @@ const DoctorList = () => {
         if (snapshot.exists()) {
           const data = snapshot.val();
           const doctorsArray = Object.keys(data).map((key) => {
-            const doc = data[key];
+  const doc = data[key];
 
-            const workingHoursArray = Array.isArray(doc.workingHours)
-              ? doc.workingHours
-              : doc.workingHours
-              ? Object.values(doc.workingHours)
-              : [];
-
-            const unavailableArray = Array.isArray(doc.unavailable)
-              ? doc.unavailable
-              : doc.unavailable
-              ? Object.values(doc.unavailable)
-              : [];
-
-            return {
-              id: key,
-              ...doc,
-              workingHours: workingHoursArray,
-              unavailable: unavailableArray,
-            };
-          });
+  return {
+    id: key,
+    ...doc,
+    workingHours: doc.workingHours || {},
+  };
+});
 
           const activeDoctors = doctorsArray.filter((doc) => doc.value !== "suspended");
           setDoctors(activeDoctors);
@@ -63,34 +50,76 @@ const DoctorList = () => {
   }, []);
 
   // 🔹 Determine doctor availability if date/time search provided
-  const checkAvailability = (doc) => {
-    if (!filters.date || !filters.time) return null; // Only check if searching
+ // 🔹 helper to compare HH:mm times
+const isTimeBetween = (time, start, end) => {
+  return time >= start && time <= end;
+};
 
-    const dayOfWeek = new Date(filters.date).toLocaleString("en-US", { weekday: "long" });
-    const time = filters.time;
+const checkAvailability = (doc) => {
+  if (!filters.date || !filters.time) return null;
 
-    // Check working hours
-    const working = doc.workingHours.find((wh) => wh.day === dayOfWeek);
-    if (!working) return false;
+  try {
+    const searchDate = filters.date; // "2026-02-26"
+    const searchTime = filters.time; // "14:45"
 
-    if (time < working.start || time > working.end) return false;
+    const dateObj = new Date(searchDate);
+    const day = dateObj.getDay(); // 0=Sun,6=Sat
+    const isWeekend = day === 0 || day === 6;
 
-    // Check unavailable hours
-    const unavailable = doc.unavailable.find((un) => un.day === dayOfWeek);
-    if (unavailable && time >= unavailable.start && time <= unavailable.end) return false;
+    const wh = doc.workingHours || {};
 
-    return true;
-  };
+    // ✅ STEP 1 — get working range
+    const workingRange = isWeekend
+      ? wh.weekends
+      : wh.weekdays;
 
-  const filteredDoctors = doctors.filter((dr) => {
-    const nameMatch = !filters.name || dr.name.toLowerCase().includes(filters.name.toLowerCase());
-    const specializationMatch =
-      !filters.specialization ||
-      dr.specialization.toLowerCase().includes(filters.specialization.toLowerCase());
+    if (!workingRange?.start || !workingRange?.end) {
+      return false;
+    }
 
-    return nameMatch && specializationMatch;
-  });
+    // ❌ Not inside working hours
+    const insideWorking = isTimeBetween(
+      searchTime,
+      workingRange.start,
+      workingRange.end
+    );
 
+    if (!insideWorking) return false;
+
+    // ✅ STEP 2 — check unavailable slots for SAME DATE
+    const unavailableList = Array.isArray(wh.unavailable)
+      ? wh.unavailable
+      : wh.unavailable
+      ? Object.values(wh.unavailable)
+      : [];
+
+    const isBlocked = unavailableList.some((slot) => {
+      if (slot.date !== searchDate) return false;
+
+      return isTimeBetween(searchTime, slot.start, slot.end);
+    });
+
+    // ✅ FINAL DECISION
+    return !isBlocked;
+  } catch (err) {
+    console.error("Availability check error:", err);
+    return false;
+  }
+};
+// 🔹 filter doctors by name + specialization
+const filteredDoctors = doctors.filter((dr) => {
+  const nameMatch =
+    !filters.name ||
+    dr.name?.toLowerCase().includes(filters.name.toLowerCase());
+
+  const specializationMatch =
+    !filters.specialization ||
+    dr.specialization
+      ?.toLowerCase()
+      .includes(filters.specialization.toLowerCase());
+
+  return nameMatch && specializationMatch;
+});
   return (
     <div className="doctor-list-page">
       <header className="doctor-header">
@@ -239,27 +268,43 @@ const DoctorList = () => {
                 : selectedDoctor.value}
             </p>
 
-            {selectedDoctor.workingHours.length > 0 && (
-              <div>
-                <strong>Working Hours:</strong>
-                <ul>
-                  {selectedDoctor.workingHours.map((wh, idx) => (
-                    <li key={idx}>{wh.day}: {wh.start} - {wh.end}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {selectedDoctor.workingHours && (
+  <div>
+    <strong>Working Hours:</strong>
+    <ul>
+      {selectedDoctor.workingHours.weekdays && (
+        <li>
+          Weekdays:{" "}
+          {selectedDoctor.workingHours.weekdays.start} -{" "}
+          {selectedDoctor.workingHours.weekdays.end}
+        </li>
+      )}
 
-            {selectedDoctor.unavailable.length > 0 && (
-              <div>
-                <strong>Unavailable:</strong>
-                <ul>
-                  {selectedDoctor.unavailable.map((un, idx) => (
-                    <li key={idx}>{un.day}: {un.start} - {un.end}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {selectedDoctor.workingHours.weekends && (
+        <li>
+          Weekends:{" "}
+          {selectedDoctor.workingHours.weekends.start} -{" "}
+          {selectedDoctor.workingHours.weekends.end}
+        </li>
+      )}
+    </ul>
+  </div>
+)}
+
+            {selectedDoctor.workingHours?.unavailable && (
+  <div>
+    <strong>Unavailable Slots:</strong>
+    <ul>
+      {Object.values(selectedDoctor.workingHours.unavailable).map(
+        (un, idx) => (
+          <li key={idx}>
+            {un.date}: {un.start} - {un.end}
+          </li>
+        )
+      )}
+    </ul>
+  </div>
+)}
           </div>
         </div>
       )}

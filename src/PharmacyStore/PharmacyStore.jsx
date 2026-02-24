@@ -123,24 +123,28 @@ const PharmacyStore = () => {
 
                     // Save product
                     medMap[medName] = {
-                        id: medId,
-                        name: med.name,
-                        category: med.categories?.[0] || "General",
-                        price: Number(med.price) || 0,
-                        description: med.description,
-                        offer: med.discount || null,
-                        image: med.imageUrl || null,
-                        dosage: med.dosage,
-                        manufacturer: med.manufacturer,
-                        expiryDate: med.expiryDate,
-                        usageInstructions: med.usageInstructions,
-                        warnings: med.warnings,
-                        sideEffects: med.sideEffects,
-                        pharmacies: nearestPharmacy.pharmacyname,
-                        isAvailable: true, // ✅ Make available
-                        prescriptionRequired: med.prescriptionRequired || false,
-                        deliveryFee: Number(med.deliveryFee) || 0
-                    };
+    id: medId,
+    name: med.name,
+    category: med.categories?.[0] || "General",
+    price: Number(med.price) || 0,
+    description: med.description,
+    offer: med.discount || null,
+    image: med.imageUrl || null,
+    dosage: med.dosage,
+    manufacturer: med.manufacturer,
+    expiryDate: med.expiryDate,
+    usageInstructions: med.usageInstructions,
+    warnings: med.warnings,
+    sideEffects: med.sideEffects,
+
+    // ✅ SAVE BOTH
+    pharmacyname: nearestPharmacy.pharmacyname,
+    pharmacyUID: med.pharmacyUID,   // 🔥 VERY IMPORTANT
+
+    isAvailable: true,
+    prescriptionRequired: med.prescriptionRequired || false,
+    deliveryFee: Number(med.deliveryFee) || 0
+};
                 });
 
                 const loadedProducts = Object.values(medMap);
@@ -166,16 +170,19 @@ const PharmacyStore = () => {
     }
 
     const itemForCheckout = {
-        id: product.id,
-        name: product.name,
-        price: Number(product.price) || 0,
-        qty: 1,
-        pharmacyname: product.pharmacies || "Unknown Pharmacy",
-        offer: product.offer || null,
-        prescriptionRequired: product.prescriptionRequired || false,
-        deliveryFee: product.deliveryFee || 250,
-        isAvailable: true
-    };
+    id: product.id,
+    name: product.name,
+    price: Number(product.price) || 0,
+    qty: 1,
+
+    pharmacyname: product.pharmacyname || "Unknown Pharmacy",
+    pharmacyUID: product.pharmacyUID,   // 🔥 ADD THIS
+
+    offer: product.offer || null,
+    prescriptionRequired: product.prescriptionRequired || false,
+    deliveryFee: product.deliveryFee || 250,
+    isAvailable: true
+};
 
     navigate("/CheckoutPage", { state: { items: [itemForCheckout] } });
 };
@@ -188,16 +195,19 @@ const PharmacyStore = () => {
         }
 
         const itemForCart = {
-            id: product.id,
-            name: product.name,
-            price: Number(product.price) || 0,
-            qty: 1,
-            pharmacyname: product.pharmacies || "Unknown Pharmacy",
-            offer: product.offer || null,
-            prescriptionRequired: product.prescriptionRequired || false,
-            deliveryFee: product.deliveryFee || 250,
-            isAvailable: true
-        };
+    id: product.id,
+    name: product.name,
+    price: Number(product.price) || 0,
+    qty: 1,
+
+    pharmacyname: product.pharmacyname || "Unknown Pharmacy",
+    pharmacyUID: product.pharmacyUID,  // 🔥 ADD THIS
+
+    offer: product.offer || null,
+    prescriptionRequired: product.prescriptionRequired || false,
+    deliveryFee: product.deliveryFee || 250,
+    isAvailable: true
+};
 
         setCartItems(prev => {
             const existing = prev.find(item => item.id === product.id);
