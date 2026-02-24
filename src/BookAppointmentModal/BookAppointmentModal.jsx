@@ -14,9 +14,25 @@ const BookAppointmentModal = ({ doctor, onClose }) => {
 
   const [patientList, setPatientList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [availableHours, setAvailableHours] = useState([]);
+  const [showBusyPopup, setShowBusyPopup] = useState(false);
 
-  // Fetch main user + family members
+  // Convert HH:mm → minutes
+  const toMinutes = (timeStr) => {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  // Check if time is inside range
+  const isBetween = (time, start, end) => {
+    const t = toMinutes(time);
+    const s = toMinutes(start);
+    const e = toMinutes(end);
+    if (t === null || s === null || e === null) return false;
+    return t >= s && t <= e;
+  };
+
+  // Fetch patient list
   useEffect(() => {
     const fetchPatients = async () => {
       const user = auth.currentUser;
@@ -28,122 +44,70 @@ const BookAppointmentModal = ({ doctor, onClose }) => {
 
         const patientData = snapshot.val();
         let list = [];
-
         if (patientData.basic?.name) {
           list.push({ id: user.uid, name: patientData.basic.name, relationship: "Myself" });
         }
-
         const familyArray = patientData.profile?.familyMembers || [];
         familyArray.forEach((member) => {
           if (member.name && member.relationship) {
-            list.push({
-              id: member.id || member.name,
-              name: member.name,
-              relationship: member.relationship,
-            });
+            list.push({ id: member.id || member.name, name: member.name, relationship: member.relationship });
           }
         });
-
         setPatientList(list);
       } catch (err) {
         console.error("Error loading patients:", err);
       }
     };
 
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) fetchPatients();
-    });
-
-    return () => unsubscribe();
+    const unsub = auth.onAuthStateChanged((user) => { if (user) fetchPatients(); });
+    return () => unsub();
   }, []);
 
-  // Compute available hours for selected date
-  useEffect(() => {
-    if (!formData.date) {
-      setAvailableHours([]);
-      return;
-    }
+  // 🔹 MAIN AVAILABILITY CHECK
+  const checkAvailability = () => {
+    if (!doctor || !formData.date || !formData.time) return null;
 
-    const selectedDay = new Date(formData.date).getDay(); // 0=Sun, 6=Sat
-    let workingStart = "";
-    let workingEnd = "";
-
-    if (selectedDay === 0 || selectedDay === 6) {
-      // Weekend
-      workingStart = doctor.workingHours?.weekends?.start || "";
-      workingEnd = doctor.workingHours?.weekends?.end || "";
-    } else {
-      // Weekday
-      workingStart = doctor.workingHours?.weekdays?.start || "";
-      workingEnd = doctor.workingHours?.weekdays?.end || "";
-    }
-
-    // If doctor doesn't work this day
-    if (!workingStart || !workingEnd) {
-      setAvailableHours([]);
-      return;
-    }
-
-    // Start with full working slot
-    let slots = [{ start: workingStart, end: workingEnd }];
-
-    // Exclude unavailable slots
-    const unavailable = doctor.workingHours?.unavailable?.filter(
-      (u) => u.date === formData.date
-    );
-
-    if (unavailable?.length > 0) {
-      // For simplicity, we will just remove times overlapping with unavailable
-      slots = slots.flatMap((slot) => {
-        let result = [];
-        let currentStart = slot.start;
-
-        unavailable.forEach((un) => {
-          if (un.start > currentStart) {
-            result.push({ start: currentStart, end: un.start });
-          }
-          currentStart = un.end > currentStart ? un.end : currentStart;
-        });
-
-        if (currentStart < slot.end) {
-          result.push({ start: currentStart, end: slot.end });
-        }
-
-        return result;
-      });
-    }
-
-    setAvailableHours(slots);
-  }, [formData.date, doctor]);
-
-  const validateAppointment = () => {
     const { date, time } = formData;
-    if (!date || !time) return false;
+    const wh = doctor.workingHours || {};
 
-    // Determine day
-    const selectedDay = new Date(date).getDay();
-    let workingStart = "";
-    let workingEnd = "";
-    if (selectedDay === 0 || selectedDay === 6) {
-      workingStart = doctor.workingHours?.weekends?.start || "";
-      workingEnd = doctor.workingHours?.weekends?.end || "";
-    } else {
-      workingStart = doctor.workingHours?.weekdays?.start || "";
-      workingEnd = doctor.workingHours?.weekdays?.end || "";
+    try {
+      const dateObj = new Date(date);
+      const day = dateObj.getDay(); // 0=Sunday, 6=Saturday
+      const isWeekend = day === 0 || day === 6;
+
+      // 1️⃣ Pick working hours
+      const working = isWeekend ? wh.weekends : wh.weekdays;
+
+      if (!working?.start || !working?.end) return false;
+
+      // 2️⃣ Check if inside working hours
+      if (!isBetween(time, working.start, working.end)) return false;
+
+      // 3️⃣ Check unavailable slots
+      let unavailableList = [];
+      if (Array.isArray(wh.unavailable)) {
+        unavailableList = wh.unavailable;
+      } else if (wh.unavailable && typeof wh.unavailable === "object") {
+        unavailableList = Object.values(wh.unavailable);
+      }
+
+      const isBlocked = unavailableList.some((slot) => {
+        if (!slot.date) return false;
+        if (slot.date !== date) return false;
+
+        return isBetween(time, slot.start, slot.end);
+      });
+
+      return !isBlocked;
+    } catch (err) {
+      console.error("Availability error:", err);
+      return false;
     }
-
-    if (!workingStart || !workingEnd) return false;
-    if (time < workingStart || time > workingEnd) return false;
-
-    // Check unavailable slots
-    const unavailable = doctor.workingHours?.unavailable?.filter(
-      (u) => u.date === date
-    );
-    if (unavailable?.some((u) => time >= u.start && time <= u.end)) return false;
-
-    return true;
   };
 
+  const availability = checkAvailability();
+
+  // Handle Booking
   const handleBooking = async (e) => {
     e.preventDefault();
     const { patientName, date, time, reason } = formData;
@@ -153,20 +117,19 @@ const BookAppointmentModal = ({ doctor, onClose }) => {
       return;
     }
 
-    if (!validateAppointment()) {
-      alert("Selected time is outside working hours or unavailable.");
+    if (!availability) {
+      alert("Selected time is unavailable.");
       return;
     }
 
     try {
       setLoading(true);
-      const patientId = auth.currentUser.uid;
 
       const appointmentData = {
         doctorId: doctor.id,
         doctorName: doctor.name,
         doctorSpecialization: doctor.specialization,
-        patientId,
+        patientId: auth.currentUser.uid,
         patientName,
         date,
         time,
@@ -176,7 +139,6 @@ const BookAppointmentModal = ({ doctor, onClose }) => {
       };
 
       await push(ref(database, "appointments"), appointmentData);
-
       alert("Appointment booked successfully!");
       onClose();
     } catch (err) {
@@ -193,64 +155,98 @@ const BookAppointmentModal = ({ doctor, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="booking-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-btn" onClick={onClose}>✕</button>
+
         <h2>Book Appointment</h2>
 
         <form className="booking-form" onSubmit={handleBooking}>
-          {/* Patient Dropdown */}
+          {/* Patient */}
           <select
-            value={formData.patientName}
+            value={formData.patientName || ""}
             onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
             required
           >
             <option value="">Select Patient</option>
-            {patientList.map((patient) => (
-              <option key={patient.id} value={patient.name}>
-                {patient.name} ({patient.relationship})
+            {patientList.map((p) => (
+              <option key={p.id} value={p.name}>
+                {p.name} ({p.relationship})
               </option>
             ))}
           </select>
 
+          {/* Date */}
           <input
             type="date"
-            value={formData.date}
+            value={formData.date || ""}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             required
           />
 
-          {/* Display available hours for selected date */}
-          {formData.date && (
-            <div className="available-hours">
-              <strong>Available Hours:</strong>
-              {availableHours.length === 0 ? (
-                <p>Doctor is unavailable on this day.</p>
-              ) : (
-                <ul>
-                  {availableHours.map((slot, idx) => (
-                    <li key={idx}>{slot.start} - {slot.end}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-
+          {/* Time */}
           <input
             type="time"
-            value={formData.time}
+            value={formData.time || ""}
             onChange={(e) => setFormData({ ...formData, time: e.target.value })}
             required
           />
 
+          {/* Availability */}
+          {formData.date && formData.time && (
+            <div className="availability-status">
+              <strong>Doctor: </strong>
+              {availability === null ? (
+                <span>—</span>
+              ) : availability ? (
+                <span style={{ color: "green", fontWeight: 600 }}>● Available</span>
+              ) : (
+                <span style={{ color: "red", fontWeight: 600 }}>● Busy</span>
+              )}
+            </div>
+          )}
+
+          {/* Reason */}
           <textarea
             placeholder="Reason for appointment"
-            value={formData.reason}
+            value={formData.reason || ""}
             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
             required
           />
 
-          <button type="submit" className="confirm-booking-btn" disabled={loading}>
+          <button
+            type="submit"
+            className="confirm-booking-btn"
+            disabled={loading || availability === false}
+          >
             {loading ? "Booking..." : "Confirm Booking"}
           </button>
+
+          {/* Check Busy Times */}
+          <button type="button" className="check-busy-btn" onClick={() => setShowBusyPopup(true)}>
+            Check Busy Times
+          </button>
         </form>
+
+        {/* Busy Times Popup */}
+        {showBusyPopup && (
+          <div className="busy-popup-overlay" onClick={() => setShowBusyPopup(false)}>
+            <div className="busy-popup" onClick={(e) => e.stopPropagation()}>
+              <button className="close-btn" onClick={() => setShowBusyPopup(false)}>✕</button>
+              <h3>Working Hours</h3>
+              <p><strong>Weekdays:</strong> {doctor.workingHours?.weekdays?.start} - {doctor.workingHours?.weekdays?.end}</p>
+              <p><strong>Weekends:</strong> {doctor.workingHours?.weekends?.start} - {doctor.workingHours?.weekends?.end}</p>
+
+              <h3>Unavailable Slots</h3>
+              {doctor.workingHours?.unavailable && doctor.workingHours.unavailable.length > 0 ? (
+                <ul>
+                  {doctor.workingHours.unavailable.map((slot, idx) => (
+                    <li key={idx}>{slot.date}: {slot.start} - {slot.end}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No unavailable slots</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

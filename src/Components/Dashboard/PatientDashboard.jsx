@@ -34,6 +34,7 @@ export default function PatientDashboard() {
   const [doctorFilters, setDoctorFilters] = useState({
     name: "",
     specialization: "",
+    date: "",
     time: "",
   });
 

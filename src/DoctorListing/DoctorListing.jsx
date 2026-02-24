@@ -21,57 +21,43 @@ const DoctorList = () => {
   // 🔹 State for selected doctor popup
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-   const [bookingDoctor, setBookingDoctor] = useState(null);
+  const [bookingDoctor, setBookingDoctor] = useState(null);
 
   // 🔹 Fetch doctors from Firebase
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const doctorsRef = ref(database, "doctors");
-        const snapshot = await get(doctorsRef);
+ useEffect(() => {
+  const fetchDoctors = async () => {
+    try {
+      const doctorsRef = ref(database, "doctors");
+      const snapshot = await get(doctorsRef);
 
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const doctorsArray = Object.keys(data).map((key) => {
-            const doc = data[key];
+      if (snapshot.exists()) {
+        const data = snapshot.val();
 
-            // 🔹 Ensure workingHours & unavailable are arrays
-            const workingHoursArray = Array.isArray(doc.workingHours)
-              ? doc.workingHours
-              : doc.workingHours
-              ? Object.values(doc.workingHours)
-              : [];
+        const doctorsArray = Object.keys(data).map((key) => {
+          const doc = data[key];
 
-            const unavailableArray = Array.isArray(doc.unavailable)
-              ? doc.unavailable
-              : doc.unavailable
-              ? Object.values(doc.unavailable)
-              : [];
+          return {
+            id: key,
+            ...doc,
+            workingHours: doc.workingHours || {},
+          };
+        });
 
-            return {
-              id: key,
-              ...doc,
-              workingHours: workingHoursArray,
-              unavailable: unavailableArray,
-            };
-          });
+        const activeDoctors = doctorsArray.filter(
+          (doc) => doc.value !== "suspended"
+        );
 
-          // 🔹 Only show active doctors (not suspended)
-          const activeDoctors = doctorsArray.filter(
-            (doc) => doc.value !== "suspended"
-          );
-
-          setDoctors(activeDoctors);
-        }
-      } catch (error) {
-        console.error("Error fetching doctors:", error);
-      } finally {
-        setLoading(false);
+        setDoctors(activeDoctors);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchDoctors();
-  }, []);
+  fetchDoctors();
+}, []);
 
   // 🔹 Apply filters from Search Form
   const filteredDoctors = doctors.filter((dr) => {
@@ -158,11 +144,11 @@ const DoctorList = () => {
                       View Profile
                     </button>
                     <button
-  className="book-now-btn"
-  onClick={() => setBookingDoctor(dr)}
->
-  Book Appointment
-</button>
+                      className="book-now-btn"
+                      onClick={() => setBookingDoctor(dr)}
+                    >
+                      Book Appointment
+                    </button>
                   </div>
                 </div>
               ))
@@ -171,7 +157,7 @@ const DoctorList = () => {
         )}
       </div>
 
-      {/* 🔹 Doctor Details Popup */}
+      {/* Doctor Details Popup */}
       {selectedDoctor && (
         <div
           className="modal-overlay"
@@ -228,35 +214,48 @@ const DoctorList = () => {
                 : selectedDoctor.value}
             </p>
 
-            {selectedDoctor.workingHours.length > 0 && (
-              <div>
-                <strong>Working Hours:</strong>
-                <ul>
-                  {selectedDoctor.workingHours.map((wh, index) => (
-                    <li key={index}>
-                      {wh.day}: {wh.start} - {wh.end}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {selectedDoctor.workingHours && (
+  <div>
+    <strong>Working Hours:</strong>
+    <ul>
+      {selectedDoctor.workingHours.weekdays && (
+        <li>
+          Weekdays:{" "}
+          {selectedDoctor.workingHours.weekdays.start} -{" "}
+          {selectedDoctor.workingHours.weekdays.end}
+        </li>
+      )}
 
-            {selectedDoctor.unavailable.length > 0 && (
-              <div>
-                <strong>Unavailable:</strong>
-                <ul>
-                  {selectedDoctor.unavailable.map((un, index) => (
-                    <li key={index}>
-                      {un.day}: {un.start} - {un.end}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {selectedDoctor.workingHours.weekends && (
+        <li>
+          Weekends:{" "}
+          {selectedDoctor.workingHours.weekends.start} -{" "}
+          {selectedDoctor.workingHours.weekends.end}
+        </li>
+      )}
+    </ul>
+  </div>
+)}
+
+            {selectedDoctor.workingHours?.unavailable && (
+  <div>
+    <strong>Unavailable Slots:</strong>
+    <ul>
+      {Object.values(selectedDoctor.workingHours.unavailable).map(
+        (un, idx) => (
+          <li key={idx}>
+            {un.date}: {un.start} - {un.end}
+          </li>
+        )
+      )}
+    </ul>
+  </div>
+)}
           </div>
         </div>
       )}
-      {/* ✅ ADDED BOOKING MODAL */}
+
+      {/* ✅ BOOKING MODAL */}
       {bookingDoctor && (
         <BookAppointmentModal
           doctor={bookingDoctor}
