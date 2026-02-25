@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import './PharmacyStore.css';
 import Logo from '../assets/Logo.jpeg';
+import HomeIcon from '../assets/Home.png';
 import { useNavigate, useLocation } from "react-router-dom";
 import { ref, onValue } from "firebase/database";
 import { database } from "../Firebase";
@@ -276,6 +277,20 @@ const PharmacyStore = () => {
                         {selectedPharmacyFilter && <h4 className="pharmacy-filter-label">Showing: {selectedPharmacyFilter.pharmacyname}</h4>}
                     </div>
                 </div>
+               
+
+        {/* ✅ Home Button */}
+        <div 
+            className="home-icon"
+            onClick={() => navigate("/PatientDashboard")}
+            style={{ cursor: "pointer", marginLeft: "10px" }}
+        >
+            <img 
+                src={HomeIcon} 
+                alt="Home" 
+                style={{ width: "30px", height: "30px" }}
+            />
+        </div>
                 <div className="header-right">
                     {!preSelectedPharmacy && (
                         <button className="search-pharmacy-btn" onClick={() => setShowPharmacySearch(true)}>Search Pharmacy</button>

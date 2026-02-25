@@ -192,31 +192,34 @@ const handleAcceptOrder = async (order) => {
 };
 
 const handleRejectOrder = async (order) => {
-  const confirmReject = window.confirm(`Are you sure you want to REJECT order ${order.id}?`);
-  if (!confirmReject) return;
+  if (!order.paymentId || order.paymentStatus !== "Paid") {
+    alert("Order is not paid, no refund needed");
+    return;
+  }
 
-  const orderRef = ref(database, `pharmacyOrders/${currentUserUid}/${order.id}`);
   try {
-    await update(orderRef, { status: 'rejected' });
-    console.log('Order rejected');
-
-    // ✅ Call new backend endpoint
-    await fetch('http://localhost:8080/api/email/sendOrderStatusEmail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("http://localhost:8080/api/payment/refund", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        patientEmail: order.userEmail,
-        patientName: order.patientName,
-        orderId: order.id,
-        status: 'rejected',  // Important!
-      }),
-    })
-    .then(res => res.text())
-    .then(res => console.log("Email response:", res))
-    .catch(err => console.error("Email sending failed:", err));
+        paymentId: order.paymentId,
+        amount: order.totalAmount
+      })
+    });
+    const data = await res.text();
+
+    console.log("Refund response:", data);
+
+    // 🔥 Update Firebase order paymentStatus
+    await update(ref(database, `pharmacyOrders/${order.pharmacyId}/${order.id}`), {
+      paymentStatus: "Refunded"
+    });
+
+    alert("Order rejected and payment refunded successfully!");
 
   } catch (err) {
-    console.error("Reject failed:", err);
+    console.error("Refund failed:", err);
+    alert("Refund failed, contact support.");
   }
 };
 
