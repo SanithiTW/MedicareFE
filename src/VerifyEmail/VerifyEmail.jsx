@@ -24,36 +24,44 @@ const VerifyEmail = () => {
 
   // ✅ FIXED: sync email + verified AFTER user clicks verification link
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user && uid) {
-        try {
-          // ✅ update verified flag if user verified email
-          if (user.emailVerified) {
-            await API.patch(`/patient/${uid}/verify-email`, {
-              emailVerified: true
-            });
-          }
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (!user || !uid) return;
 
-          // ✅ update email in realtime DB if different
-          if (user.email !== currentEmail) {
-            await API.patch(`/patient/${uid}/update-email`, {
-              email: user.email
-            });
+    try {
+      await user.reload(); // Force Firebase to refresh user data
 
-            // update local state to reflect new email
-            setCurrentEmail(user.email);
-          }
+      const updatedEmail = user.email;
+      const verified = user.emailVerified;
 
-          console.log("✅ Email + verification synced");
+      // ✅ Only update backend if the email really changed
+      if (updatedEmail && updatedEmail !== currentEmail) {
+        console.log("Updating backend email:", updatedEmail);
+        const res = await API.patch(`/patient/${uid}/update-email`, {
+          email: updatedEmail
+        });
+        console.log("Backend response:", res.data);
 
-        } catch (err) {
-          console.error("Backend update failed", err);
-        }
+        // Update frontend state
+        setCurrentEmail(updatedEmail);
       }
-    });
 
-    return () => unsub();
-  }, [uid, currentEmail]);
+      // ✅ Update email verified flag
+      if (verified) {
+        console.log("Updating backend emailVerified flag");
+        await API.patch(`/patient/${uid}/verify-email`, {
+          emailVerified: true
+        });
+      }
+
+      console.log("✅ Email + verification synced");
+
+    } catch (err) {
+      console.error("Sync failed:", err);
+    }
+  });
+
+  return () => unsubscribe();
+}, [uid, currentEmail]);
 
   // ✅ RESEND VERIFICATION
   const handleResend = async () => {

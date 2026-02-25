@@ -312,7 +312,7 @@ const PharmacyStore = () => {
                                 </div>
                                 <div className="card-body">
                                     <h4 className="prod-name">{product.name}</h4>
-                                    <p className="prod-pharmacies">📍 {product.pharmacies}</p>
+                                    <p className="prod-pharmacies">📍 {product.pharmacyname}</p>
                                     <p className="prod-short-desc">{product.description?.substring(0, 45)}...</p>
                                     <h3 className="prod-price">
     Rs. {product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}

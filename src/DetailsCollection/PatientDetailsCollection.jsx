@@ -10,6 +10,51 @@ import API from "../api/api";
 import { auth } from "../Firebase"; 
 import { getAuth, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 
+const FamilyMemberInputs = ({ member, index, handleFamilyChange, deleteFamilyMember }) => (
+  <div style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+
+    <button 
+      type="button" 
+      className="delete-btn"
+      onClick={() => deleteFamilyMember(member.id)}
+    >
+      Delete
+    </button>
+
+    <h4 style={{ color: '#0C6C1E', margin: '0 0 10px 0', fontSize: '1.1rem' }}>
+      Family Member {index + 1}
+    </h4>
+
+    <div className="input-row">
+      <label>Full Name</label>
+      <input 
+        type="text" 
+        value={member.name} 
+        onChange={(e) => handleFamilyChange(member.id, 'name', e.target.value)} 
+      />
+    </div>
+
+    <div className="input-row">
+      <label>Relation</label>
+      <input 
+        type="text" 
+        value={member.relation} 
+        onChange={(e) => handleFamilyChange(member.id, 'relation', e.target.value)} 
+      />
+    </div>
+
+    <div className="input-row">
+      <label>Date of Birth</label>
+      <input 
+        type="date" 
+        value={member.dob} 
+        onChange={(e) => handleFamilyChange(member.id, 'dob', e.target.value)} 
+      />
+    </div>
+
+  </div>
+);
+
 const PatientDetailsCollectionPage = () => {
 
   useEffect(() => {
@@ -204,34 +249,6 @@ const PatientDetailsCollectionPage = () => {
     }
   };
 
-  const FamilyMemberInputs = ({ member, index }) => (
-    <div key={member.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-      {details.familyMembers.length > 0 && (
-        <button 
-          type="button" 
-          className="delete-btn"
-          onClick={() => deleteFamilyMember(member.id)}
-        >
-          Delete
-        </button>
-      )}
-      <h4 style={{ color: '#0C6C1E', margin: '0 0 10px 0', fontSize: '1.1rem' }}>Family Member {index + 1}</h4>
-      <div className="input-row">
-        <label htmlFor={`family_name_${member.id}`}>Full Name</label>
-        <input type="text" id={`family_name_${member.id}`} value={member.name} onChange={(e) => handleFamilyChange(member.id, 'name', e.target.value)} />
-      </div>
-      <div className="input-row">
-        <label htmlFor={`family_relation_${member.id}`}>Relation</label>
-        <input type="text" id={`family_relation_${member.id}`} value={member.relation} onChange={(e) => handleFamilyChange(member.id, 'relation', e.target.value)} />
-      </div>
-      <div className="input-row">
-        <label htmlFor={`family_dob_${member.id}`}>Date of Birth</label>
-        <input type="date" id={`family_dob_${member.id}`} value={member.dob} onChange={(e) => handleFamilyChange(member.id, 'dob', e.target.value)} />
-      </div>
-      <div style={{ clear: 'both' }}></div>
-    </div>
-  );
-
 
 
     return (
@@ -388,8 +405,14 @@ const PatientDetailsCollectionPage = () => {
                         {/* 5. Family Members */}
                         <h3>👨‍👩‍👧‍👦 Family Members (Up to 3)</h3>
                         {details.familyMembers.map((member, index) => (
-                            <FamilyMemberInputs member={member} index={index} key={member.id} />
-                        ))}
+  <FamilyMemberInputs
+    key={member.id}
+    member={member}
+    index={index}
+    handleFamilyChange={handleFamilyChange}
+    deleteFamilyMember={deleteFamilyMember}
+  />
+))}
                         
                         {details.familyMembers.length < 3 && (
                             <button 

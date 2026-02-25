@@ -71,7 +71,7 @@ const CheckoutPage = () => {
       return {
   ...item,   // ✅ keeps ALL medicine fields from Firebase
 
-  pharmacyID: item.pharmacyUID || item.pharmacyId || item.pharmacy_id || null,
+  pharmacyUID: item.pharmacyUID || null,
   pharmacyname,
 
   price,
@@ -87,7 +87,10 @@ const CheckoutPage = () => {
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.discountedPrice * item.qty), 0);
   const discount = cartItems.reduce((acc, item) => acc + ((item.price - item.discountedPrice) * item.qty), 0);
-  const deliveryFee = cartItems.length > 0 ? cartItems[0].deliveryFee : 0;
+  const deliveryFee = cartItems.reduce(
+  (acc, item) => acc + Number(item.deliveryFee || 0),
+  0
+);
   const total = Math.max(subtotal + deliveryFee, 0);
 
   const requiresPrescription = cartItems.some(item => item.prescriptionRequired);
@@ -109,18 +112,37 @@ const CheckoutPage = () => {
     return data.publicUrl;
   };
 
-  const handleSandboxPayment = async () => {
-    if (requiresPrescription && !prescriptionFile) {
-      alert("Prescription is required before payment.");
-      return;
-    }
-    if (!window.payhere) {
-      alert("PayHere SDK not loaded");
-      return;
-    }
+ const handleSandboxPayment = async () => {
+  if (requiresPrescription && !prescriptionFile) {
+    alert("Prescription is required before payment.");
+    return;
+  }
 
-    const orderId = "ORDER_" + new Date().getTime();
-    const amountStr = total.toFixed(2);
+  if (!window.payhere) {
+    alert("PayHere SDK not loaded");
+    return;
+  }
+
+  const user = auth.currentUser;
+  if (!user) return alert("Please login");
+
+  let uploadedPrescriptionUrl = "";
+
+  // ✅ UPLOAD HERE BEFORE PAYMENT
+  if (requiresPrescription && prescriptionFile) {
+    try {
+      uploadedPrescriptionUrl = await uploadPrescription(prescriptionFile);
+    } catch (err) {
+      alert("Failed to upload prescription.");
+      return;
+    }
+  }
+
+  // Save temporarily in state
+  sessionStorage.setItem("tempPrescriptionUrl", uploadedPrescriptionUrl);
+
+  const orderId = "ORDER_" + new Date().getTime();
+  const amountStr = total.toFixed(2);
 
     let hash = "";
     try {
@@ -144,7 +166,7 @@ const CheckoutPage = () => {
       amount: amountStr,
       currency: "LKR",
       hash,
-      first_name: customPatientName,
+      first_name: customPatientName || mainPatient?.name || "Customer",
       last_name: "",
       email: mainPatient?.email || "",
       phone: mainPatient?.phone || "",
@@ -155,6 +177,20 @@ const CheckoutPage = () => {
       delivery_city: mainPatient?.district || "",
       delivery_country: "Sri Lanka"
     };
+
+    // ✅ SAVE PATIENT SNAPSHOT BEFORE PAYMENT
+const patientSnapshot = {
+  name: customPatientName || mainPatient?.name || "",
+  phone: mainPatient?.phone || "",
+  altContact: mainPatient?.altContact || "",
+  deliveryAddress: mainPatient?.deliveryAddress || "",
+  district: mainPatient?.district || "",
+  province: mainPatient?.province || "",
+  postalCode: mainPatient?.postalCode || "",
+  email: mainPatient?.email || ""
+};
+
+sessionStorage.setItem("tempPatientInfo", JSON.stringify(patientSnapshot));
 
     window.payhere.startPayment(payment);
   };
@@ -177,66 +213,72 @@ const CheckoutPage = () => {
     setSuggestedDeliveryTime(`${day}/${month}/${year} --:${hours}:${minutes}`);
   };
 
-  const handlePlaceOrder = async (e, skipPrescriptionCheck = false) => {
+ 
+
+const handlePlaceOrder = async (e, skipPrescriptionCheck = false) => {
   if (e && e.preventDefault) e.preventDefault();
 
   try {
     const user = auth.currentUser;
     if (!user) return alert("Please login");
 
-    setIsProcessing(true); // ✅ START LOADING
+    setIsProcessing(true);
 
-    let prescriptionUrl = "";
-    if (requiresPrescription && !skipPrescriptionCheck) {
-      if (!prescriptionFile) {
-        setIsProcessing(false);
-        return alert("Prescription is required.");
-      }
-      prescriptionUrl = await uploadPrescription(prescriptionFile);
+    let prescriptionUrl = sessionStorage.getItem("tempPrescriptionUrl") || "";
+
+    let patientInfo = sessionStorage.getItem("tempPatientInfo")
+      ? JSON.parse(sessionStorage.getItem("tempPatientInfo"))
+      : {
+          name: customPatientName || mainPatient?.name || "",
+          phone: mainPatient?.phone || "",
+          altContact: mainPatient?.altContact || "",
+          deliveryAddress: mainPatient?.deliveryAddress || "",
+          district: mainPatient?.district || "",
+          province: mainPatient?.province || "",
+          postalCode: mainPatient?.postalCode || "",
+          email: mainPatient?.email || ""
+        };
+
+    // Group items by pharmacy
+    const groupedByPharmacy = {};
+    cartItems.forEach((item) => {
+      const pharmacyId = item.pharmacyUID;
+      if (!pharmacyId) return;
+
+      if (!groupedByPharmacy[pharmacyId]) groupedByPharmacy[pharmacyId] = {};
+      groupedByPharmacy[pharmacyId][item.id] = {
+        ...item,
+        price: item.price,
+        qty: item.qty,
+        discountedPrice: item.discountedPrice,
+        discountText: item.discountText,
+        freeGiftText: item.freeGiftText,
+        deliveryFee: item.deliveryFee
+      };
+    });
+
+    // Save each pharmacy order directly under pharmacyId
+    for (const pharmacyId in groupedByPharmacy) {
+      const orderData = {
+        ...groupedByPharmacy[pharmacyId],
+        userId: user.uid,
+        patient: patientInfo,
+        status: "Pending",
+        isUrgent,
+        suggestedDeliveryTime,
+        paymentMethod,
+        paymentStatus:
+          paymentMethod === "card" && skipPrescriptionCheck
+            ? "Paid"
+            : paymentMethod === "card"
+            ? "Processing"
+            : "Pending",
+        prescriptionUrl: prescriptionUrl || null,
+        createdAt: Date.now()
+      };
+
+      await push(ref(database, `pharmacyOrders/${pharmacyId}`), orderData);
     }
-
-console.log(cartItems);
-
-    const orderData = {
-  userId: user.uid,
-
-  // ✅ Patient Info
-  patient: {
-    name: customPatientName,
-    phone: mainPatient?.phone || "",
-    altContact: mainPatient?.altContact || "",
-    deliveryAddress: mainPatient?.deliveryAddress || "",
-    district: mainPatient?.district || "",
-    province: mainPatient?.province || "",
-    postalCode: mainPatient?.postalCode || "",
-    email: mainPatient?.email || ""
-  },
-
-  // ✅ Full medicine list
-  medicines: cartItems,
-
-  // ✅ Pharmacy Info
-  pharmacyID: cartItems[0]?.pharmacyID || null,
-  pharmacyName: cartItems[0]?.pharmacyname || "",
-
-  // ✅ Pricing
-  subtotal,
-  deliveryFee,
-  discount,
-  total,
-
-  // ✅ Payment
-  paymentMethod,
-  paymentStatus: paymentMethod === "card" ? "Paid" : "Pending",
-
-  // ✅ Other
-  prescriptionUrl: prescriptionUrl || null,
-  isUrgent,
-  suggestedDeliveryTime,
-  status: "Pending",
-  createdAt: Date.now()
-};
-    await push(ref(database, "orders"), orderData);
 
     setOrderPlaced(true);
     alert("Order placed successfully!");
@@ -246,26 +288,40 @@ console.log(cartItems);
     console.error(err);
     alert("Error placing order");
   } finally {
-    setIsProcessing(false); // ✅ STOP LOADING
+    setIsProcessing(false);
+    sessionStorage.removeItem("tempPatientInfo");
+    sessionStorage.removeItem("tempPrescriptionUrl");
   }
 };
 
+const saveOrderAfterPayment = async () => {
+  await handlePlaceOrder(null, true);
+};
+
   useEffect(() => {
-    if (!window.payhere) return;
+  if (!window.payhere) return;
+  
 
-    window.payhere.onCompleted = function(orderId) {
-      console.log("PayHere Payment Completed, OrderID:", orderId);
-      handlePlaceOrder(null, true);
-    };
+  window.payhere.onCompleted = async function(orderId) {
+    console.log("✅ PayHere Payment Completed:", orderId);
 
-    window.payhere.onDismissed = function() {
-      console.log("PayHere Payment Dismissed");
-    };
+    try {
+      await saveOrderAfterPayment();
+    } catch (err) {
+      console.error("Order save failed after payment:", err);
+      alert("Payment successful, but order saving failed. Please contact support.");
+    }
+  };
 
-    window.payhere.onError = function(error) {
-      console.log("PayHere Payment Error:", error);
-    };
-  }, [paymentMethod]);
+  window.payhere.onDismissed = function() {
+    console.log("PayHere Payment Dismissed");
+  };
+
+  window.payhere.onError = function(error) {
+    console.log("PayHere Payment Error:", error);
+  };
+
+}, []); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -435,7 +491,12 @@ console.log(cartItems);
       return;
     }
 
-    if (paymentMethod === "card") handleSandboxPayment();
+    if (!mainPatient) {
+  alert("Patient data still loading. Please wait.");
+  return;
+}
+
+if (paymentMethod === "card") handleSandboxPayment();
     else handlePlaceOrder(new Event("submit"));
   }}
 >
