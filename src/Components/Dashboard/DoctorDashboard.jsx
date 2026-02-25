@@ -10,7 +10,7 @@ import UserIcon from '../../assets/user.png';
 import DoctorIcon from '../../assets/doctor.png'; 
 
 import { auth, database } from "../../Firebase";
-import { ref, get, update } from "firebase/database";
+import { ref, get, update,query, orderByChild, equalTo,onValue,  } from "firebase/database";
 
 const kpis = [
     { title: 'Today’s Appointments', value: 5, icon: DoctorIcon, color: '#18D23A' },
@@ -25,6 +25,11 @@ const DoctorDashboard = () => {
     const [activeTab, setActiveTab] = useState('home');
     const [currentUserUid, setCurrentUserUid] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+const [selectedPatient, setSelectedPatient] = useState(null);
+
+
 
     const [profileData, setProfileData] = useState({
         name: "",
@@ -45,6 +50,55 @@ const DoctorDashboard = () => {
     const [newUnavailable, setNewUnavailable] = useState(null);
     const [editIndex, setEditIndex] = useState(null);
 
+    const openDetailsPopup = (appointment) => {
+    setSelectedAppointment(appointment);
+};
+
+
+const loadPatientDetails = async () => {
+    if (!selectedAppointment) return;
+
+    const snap = await get(ref(database, `patients/${selectedAppointment.patientId}`));
+
+    if (!snap.exists()) return;
+
+    const data = snap.val();
+    const profile = data.profile;
+
+    // Check if name matches main patient
+    if (profile.name === selectedAppointment.patientName) {
+        setSelectedPatient(profile);
+        return;
+    }
+
+    // Check family members
+    const member = (profile.familyMembers || [])
+        .find(m => m.name === selectedAppointment.patientName);
+
+    if (member) {
+        setSelectedPatient(member);
+    }
+};
+
+useEffect(() => {
+    if (!currentUserUid) return;
+
+    const doctorRef = ref(database, `doctors/${currentUserUid}`);
+    get(doctorRef)
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                setProfileData(data);
+                setEditData({
+                    qualification: data.qualification || "",
+                    experience: data.experience || "",
+                    fee: data.fee || "",
+                    workingHours: data.workingHours || { weekdays: { start: "", end: "" }, weekends: { start: "", end: "" }, unavailable: [] }
+                });
+            }
+        })
+        .catch(err => console.error("Failed to load doctor profile:", err));
+}, [currentUserUid]);
     // --- Auth state ---
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(user => {
@@ -54,38 +108,11 @@ const DoctorDashboard = () => {
     }, []);
 
     // --- Fetch doctor profile ---
-    useEffect(() => {
-        if (!currentUserUid) return;
 
-        const doctorRef = ref(database, `doctors/${currentUserUid}`);
-        get(doctorRef)
-            .then(snapshot => {
-                const data = snapshot.val();
-                if (data) {
-                    const workingHours = data.workingHours || { weekdays: { start: "", end: "" }, weekends: { start: "", end: "" }, unavailable: [] };
-                    if (!workingHours.unavailable) workingHours.unavailable = [];
-                    setProfileData({ ...data, workingHours });
-                    setEditData({ ...data, workingHours });
-                }
-            })
-            .catch(err => console.error("Failed to fetch doctor profile:", err));
-    }, [currentUserUid]);
 
-    // --- Input handlers ---
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setEditData(prev => ({ ...prev, [name]: value }));
-    };
 
-    const handleWorkingHoursChange = (dayType, field, value) => {
-        setEditData(prev => ({
-            ...prev,
-            workingHours: {
-                ...prev.workingHours,
-                [dayType]: { ...prev.workingHours[dayType], [field]: value }
-            }
-        }));
-    };
+
+
 
     const isWithinWorkingHours = (date, startTime, endTime) => {
         if (!date) return false;
@@ -98,6 +125,59 @@ const DoctorDashboard = () => {
         if (!hours.start || !hours.end) return false;
         return startTime >= hours.start && endTime <= hours.end;
     };
+
+   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
+    if (!currentUserUid) return;
+
+    const appointment = appointments.find(a => a.id === appointmentId);
+    if (!appointment) return alert("Appointment not found.");
+
+    const confirmMessage = `Are you sure you want to ${newStatus} the appointment for ${appointment.patientName}?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+        // Fetch patient email from DB
+        const patientSnap = await get(ref(database, `patients/${appointment.patientId}/profile/email`));
+        if (!patientSnap.exists()) throw new Error("Patient email not found");
+        const patientEmail = patientSnap.val();
+
+        if (newStatus === "approved") {
+            await update(
+                ref(database, `patients/${appointment.patientId}/allowedDoctors`),
+                { [currentUserUid]: true }
+            );
+        }
+
+        await update(ref(database, `appointments/${appointmentId}`), { status: newStatus });
+
+        setAppointments(prev =>
+            prev.map(a =>
+                a.id === appointmentId ? { ...a, status: newStatus } : a
+            )
+        );
+
+        alert(`Appointment ${newStatus}!`);
+
+        // Send email
+        const payload = {
+            patientEmail,
+            patientName: appointment.patientName,
+            appointmentId,
+            status: newStatus
+        };
+
+        await fetch("http://localhost:8080/api/email/sendAppointmentStatusEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        console.log("Email notification sent successfully.");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to update appointment status or send email.");
+    }
+};
 
      const handleSaveProfile = async () => {
         if (!currentUserUid) return;
@@ -188,11 +268,41 @@ const DoctorDashboard = () => {
     };
 
     const navLinks = [
-        { id: 'home', label: 'Overview', onClick: () => setActiveTab('home') },
-        { id: 'appointments', label: 'Appointment Management', onClick: () => setActiveTab('appointments') },
-        { id: 'records', label: 'Patient Records', onClick: () => setActiveTab('records') },
-        { id: 'profile', label: 'Profile & Settings', onClick: () => setActiveTab('profile') },
-    ];
+    { id: 'home', label: 'Overview', onClick: () => setActiveTab('home') },
+    { id: 'appointments', label: 'Appointment Management', onClick: () => setActiveTab('appointments') },
+    { id: 'records', label: 'Patient Records', onClick: () => setActiveTab('records') },
+    { id: 'profile', label: 'Profile & Settings', onClick: () => setActiveTab('profile') },
+];
+
+const [appointments, setAppointments] = useState([]);
+const [appointmentTab, setAppointmentTab] = useState('pending'); // pending | approved | rejected
+
+
+
+useEffect(() => {
+    if (!currentUserUid) return;
+
+    const appointmentsQuery = query(
+        ref(database, "appointments"),
+        orderByChild("doctorId"),
+        equalTo(currentUserUid)
+    );
+
+    get(appointmentsQuery)
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const doctorAppointments = Object.entries(data).map(([id, a]) => ({
+                    id,
+                    ...a
+                }));
+                setAppointments(doctorAppointments);
+            } else {
+                setAppointments([]);
+            }
+        })
+        .catch(err => console.error("Failed to fetch appointments:", err));
+}, [currentUserUid]);
 
     const DashboardLayout = ({ title, subtitle, navLinks, children }) => (
         <div className="doctor-dashboard-container">
@@ -231,6 +341,27 @@ const DoctorDashboard = () => {
         </div>
     );
 
+    const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setEditData(prev => ({
+        ...prev,
+        [name]: value
+    }));
+};
+
+const handleWorkingHoursChange = (dayType, field, value) => {
+    setEditData(prev => ({
+        ...prev,
+        workingHours: {
+            ...prev.workingHours,
+            [dayType]: {
+                ...prev.workingHours[dayType],
+                [field]: value
+            }
+        }
+    }));
+};
     const renderContent = () => {
         if (!currentUserUid) return <div>Loading profile...</div>;
 
@@ -250,6 +381,102 @@ const DoctorDashboard = () => {
                     </div>
                 );
 
+                case 'appointments':
+
+    const pendingAppointments = appointments.filter(a => a.status === 'pending');
+    const approvedAppointments = appointments.filter(a => a.status === 'approved');
+    const rejectedAppointments = appointments.filter(a => a.status === 'rejected');
+
+    const renderTable = (data) => (
+    <table className="appointment-table">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Reason</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {data.map(app => (
+                <tr key={app.id}>
+                    <td>{app.patientName}</td>
+                    <td>{app.date}</td>
+                    <td>{app.time}</td>
+                    <td>{app.reason}</td>
+                    <td>
+                        <button 
+                            className="details-btn"
+                            onClick={() => openDetailsPopup(app)}
+                        >
+                            Details
+                        </button>
+                    </td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+);
+    return (
+        <div className="appointments-wrapper">
+
+            {/* 🔹 Pending Section (Normal Display) */}
+            <h3 className="section-title">Pending Appointments</h3>
+
+            {pendingAppointments.map(app => (
+                <div key={app.id} className="pending-card">
+                    <div>
+                        <strong>{app.patientName}</strong> | {app.date} | {app.time}
+                    </div>
+
+                    <div className="appointment-actions">
+                        <button 
+                            className="approve-btn"
+                            onClick={() => handleUpdateAppointmentStatus(app.id, 'approved')}
+                        >
+                            Approve
+                        </button>
+
+                        <button 
+                            className="reject-btn"
+                            onClick={() => handleUpdateAppointmentStatus(app.id, 'rejected')}
+                        >
+                            Reject
+                        </button>
+
+                        <button 
+                            className="details-btn"
+                            onClick={() => openDetailsPopup(app)}
+                        >
+                            Details
+                        </button>
+                    </div>
+                </div>
+            ))}
+
+            {/* 🔹 Tabs for Approved & Rejected */}
+            <div className="status-tabs">
+                <button
+                    className={appointmentTab === 'approved' ? 'active' : ''}
+                    onClick={() => setAppointmentTab('approved')}
+                >
+                    Accepted ({approvedAppointments.length})
+                </button>
+
+                <button
+                    className={appointmentTab === 'rejected' ? 'active' : ''}
+                    onClick={() => setAppointmentTab('rejected')}
+                >
+                    Rejected ({rejectedAppointments.length})
+                </button>
+            </div>
+
+            {appointmentTab === 'approved' && renderTable(approvedAppointments)}
+            {appointmentTab === 'rejected' && renderTable(rejectedAppointments)}
+
+        </div>
+    );
             case 'profile':
                 return (
                     <div className="list-section profile-edit-container">
@@ -313,15 +540,63 @@ const DoctorDashboard = () => {
         }
     };
 
+    
+
     return (
-        <DashboardLayout 
-            title="Welcome, Doctor"
-            subtitle="Manage your appointments, patients, and medical consultations in one place."
-            navLinks={navLinks}
-        >
-            {renderContent()}
-        </DashboardLayout>
-    );
+    <DashboardLayout 
+        title="Welcome, Doctor"
+        subtitle="Manage your appointments, patients, and medical consultations in one place."
+        navLinks={navLinks}
+    >
+        {renderContent()}
+
+        {/* Appointment Details Popup */}
+        {selectedAppointment && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Appointment Details</h3>
+                    <p><strong>Patient:</strong> {selectedAppointment.patientName}</p>
+                    <p><strong>Date:</strong> {selectedAppointment.date}</p>
+                    <p><strong>Time:</strong> {selectedAppointment.time}</p>
+                    <p><strong>Reason:</strong> {selectedAppointment.reason}</p>
+
+                    <button 
+                        className="patient-btn"
+                        onClick={loadPatientDetails}
+                    >
+                        View Patient Details
+                    </button>
+
+                    <button onClick={() => {
+                        setSelectedAppointment(null);
+                        setSelectedPatient(null);
+                    }}>
+                        Close
+                    </button>
+                </div>
+            </div>
+        )}
+
+        {/* Patient Details Popup */}
+        {selectedPatient && (
+            <div className="modal-overlay">
+                <div className="modal">
+                    <h3>Patient Details</h3>
+                    <p><strong>Name:</strong> {selectedPatient.name}</p>
+                    <p><strong>DOB:</strong> {selectedPatient.dob}</p>
+                    <p><strong>Blood Group:</strong> {selectedPatient.bloodGroup}</p>
+                    <p><strong>Allergies:</strong> {selectedPatient.allergies}</p>
+                    <p><strong>Conditions:</strong> {selectedPatient.conditions || selectedPatient.chronicDiseases}</p>
+
+                    <button onClick={() => setSelectedPatient(null)}>
+                        Close
+                    </button>
+                </div>
+            </div>
+        )}
+
+    </DashboardLayout>
+);
 };
 
 export default DoctorDashboard;

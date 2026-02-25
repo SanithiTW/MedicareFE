@@ -53,10 +53,11 @@ const [editingMedicineId, setEditingMedicineId] = useState(null);
 
 const [viewingMedicine, setViewingMedicine] = useState(null);
 
+const [viewingOrder, setViewingOrder] = useState(null);
+
 // Orders state
 const [orders, setOrders] = useState([]);
-const [orderTab, setOrderTab] = useState('pending'); // for accepted/rejected tabs
-
+const [orderTab, setOrderTab] = useState('pending');
     
     // Logout function
     const handleLogout = async () => {
@@ -74,34 +75,46 @@ const [orderTab, setOrderTab] = useState('pending'); // for accepted/rejected ta
     const [currentUserUid, setCurrentUserUid] = useState(null);
 
     //order useEffect
-    useEffect(() => {
+ 
+ useEffect(() => {
   if (!currentUserUid) return;
 
-  const ordersRef = ref(database, 'orders'); // Assuming all orders stored under 'orders'
+  console.log("Current pharmacy UID:", currentUserUid);
+
+  // ✅ NEW PATH
+  const ordersRef = ref(database, `pharmacyOrders/${currentUserUid}`);
+
   const unsubscribe = onValue(
     ordersRef,
     (snapshot) => {
-      const data = snapshot.val() || {};
-      const pharmacyOrders = Object.entries(data)
-        .filter(([id, order]) => order.pharmacyUID === currentUserUid)
-        .map(([id, order]) => ({
-          id,
-          patientName: order.patientName || 'Unknown',
-          paymentMethod: order.paymentMethod || 'N/A',
-          status: order.status || 'pending', // pending, accepted, rejected
-          prescriptionUrl: order.prescriptionUrl || null,
-          orderDetails: order.items || [],
-          userEmail: order.userEmail || '', // for sending email
-        }));
+      const data = snapshot.val();
+
+      console.log("Pharmacy Orders Snapshot:", data);
+
+      if (!data) {
+        setOrders([]);
+        return;
+      }
+
+      const pharmacyOrders = Object.entries(data).map(([id, order]) => ({
+        id,
+        patientName: order.patient?.name || "Unknown",
+        paymentMethod: order.paymentMethod || "N/A",
+        paymentStatus: order.paymentStatus || "Pending",
+        status: order.status || "pending",
+        prescriptionUrl: order.prescriptionUrl || null,
+        orderDetails: order.medicines || [],
+        userEmail: order.patient?.email || "",
+      }));
+
+      console.log("Mapped Pharmacy Orders:", pharmacyOrders);
       setOrders(pharmacyOrders);
     },
-    (error) => console.error("Error fetching orders:", error)
+    (error) => console.error("Error fetching pharmacy orders:", error)
   );
 
   return () => unsubscribe();
 }, [currentUserUid]);
-
-
 
 useEffect(() => {
   const unsubscribeAuth = auth.onAuthStateChanged(user => {
@@ -150,44 +163,63 @@ useEffect(() => {
 }, [currentUserUid]);
 
 const handleAcceptOrder = async (order) => {
-  const orderRef = ref(database, `orders/${order.id}`);
+  const confirmAccept = window.confirm(`Are you sure you want to ACCEPT order ${order.id}?`);
+  if (!confirmAccept) return;
+
+  const orderRef = ref(database, `pharmacyOrders/${currentUserUid}/${order.id}`);
   try {
-    // 1️⃣ Update order status in Firebase
     await update(orderRef, { status: 'accepted' });
     console.log('Order accepted in Firebase');
 
-    // 2️⃣ Send email using Spring Boot backend
-    await fetch('http://localhost:8080/sendOrderAcceptedEmail', { // replace with your backend URL
+    // ✅ Call new backend endpoint
+    await fetch('http://localhost:8080/api/email/sendOrderStatusEmail', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         patientEmail: order.userEmail,
         patientName: order.patientName,
         orderId: order.id,
+        status: 'accepted',  // Important!
       }),
     })
-      .then(res => res.text())
-      .then(res => console.log(res))
-      .catch(err => console.error("Email sending failed:", err));
+    .then(res => res.text())
+    .then(res => console.log("Email response:", res))
+    .catch(err => console.error("Email sending failed:", err));
 
   } catch (err) {
     console.error("Accept failed:", err);
   }
 };
 
-
-
 const handleRejectOrder = async (order) => {
-  const orderRef = ref(database, `orders/${order.id}`);
+  const confirmReject = window.confirm(`Are you sure you want to REJECT order ${order.id}?`);
+  if (!confirmReject) return;
+
+  const orderRef = ref(database, `pharmacyOrders/${currentUserUid}/${order.id}`);
   try {
     await update(orderRef, { status: 'rejected' });
     console.log('Order rejected');
+
+    // ✅ Call new backend endpoint
+    await fetch('http://localhost:8080/api/email/sendOrderStatusEmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patientEmail: order.userEmail,
+        patientName: order.patientName,
+        orderId: order.id,
+        status: 'rejected',  // Important!
+      }),
+    })
+    .then(res => res.text())
+    .then(res => console.log("Email response:", res))
+    .catch(err => console.error("Email sending failed:", err));
+
   } catch (err) {
     console.error("Reject failed:", err);
   }
 };
+
 
 
 const handleDelete = (medId) => {
@@ -454,9 +486,16 @@ const handleDelete = (medId) => {
                 );
 
             case 'orders':
-  const newOrders = orders.filter(o => o.status === 'pending');
-  const acceptedOrders = orders.filter(o => o.status === 'accepted');
-  const rejectedOrders = orders.filter(o => o.status === 'rejected');
+  const newOrders = orders.filter(o => 
+  o.status && o.status.toLowerCase() === 'pending'
+);
+const acceptedOrders = orders.filter(o => 
+  o.status && o.status.toLowerCase() === 'accepted'
+);
+
+const rejectedOrders = orders.filter(o => 
+  o.status && o.status.toLowerCase() === 'rejected'
+);
 
   return (
     <div className="list-section">
@@ -469,18 +508,19 @@ const handleDelete = (medId) => {
       {/* New Orders */}
       {newOrders.length > 0 ? (
         newOrders.map(order => (
-          <div className="list-item" key={order.id} style={{ border: '2px solid #EC1414', padding: '10px', margin: '5px 0', borderRadius: '5px' }}>
-            <div className="item-details">
-              <p><strong>{order.patientName}</strong> | Payment: {order.paymentMethod}</p>
-            </div>
+          <div className="order-card order-pending" key={order.id}>
+    <div className="order-info">
+        <h4>{order.patientName}</h4>
+        <span className="payment-badge">{order.paymentMethod}</span>
+        <p>Order ID: {order.id}</p>
+    </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               {order.prescriptionUrl && (
                 <a href={order.prescriptionUrl} target="_blank" rel="noreferrer">
                   <button className="action-btn action-view">View Prescription</button>
                 </a>
               )}
-              <button className="action-btn action-view" onClick={() => alert(JSON.stringify(order.orderDetails, null, 2))}>View Details</button>
-              <button className="action-btn action-accept" onClick={() => handleAcceptOrder(order)}>Accept</button>
+              <button className="action-btn action-view" onClick={() => setViewingOrder(order)}>View Details</button>              <button className="action-btn action-accept" onClick={() => handleAcceptOrder(order)}>Accept</button>
               <button className="action-btn action-reject" onClick={() => handleRejectOrder(order)}>Reject</button>
             </div>
           </div>
@@ -489,11 +529,24 @@ const handleDelete = (medId) => {
         <p>No new orders.</p>
       )}
 
+      
+
       {/* Tabs for Accepted / Rejected */}
-      <div style={{ marginTop: '20px', display: 'flex', gap: '20px' }}>
-        <button className={orderTab === 'accepted' ? 'active-tab' : ''} onClick={() => setOrderTab('accepted')}>Accepted Orders</button>
-        <button className={orderTab === 'rejected' ? 'active-tab' : ''} onClick={() => setOrderTab('rejected')}>Rejected Orders</button>
-      </div>
+     
+<div className="order-tabs-container">
+    <button 
+        className={`order-history-tab ${orderTab === 'accepted' ? 'active-tab' : ''}`} 
+        onClick={() => setOrderTab('accepted')}
+    >
+        Accepted Orders
+    </button>
+    <button 
+        className={`order-history-tab ${orderTab === 'rejected' ? 'active-tab' : ''}`} 
+        onClick={() => setOrderTab('rejected')}
+    >
+        Rejected Orders
+    </button>
+</div>
 
       <div style={{ marginTop: '10px' }}>
         {orderTab === 'accepted' && acceptedOrders.length > 0 && acceptedOrders.map(order => (
@@ -507,11 +560,16 @@ const handleDelete = (medId) => {
           </div>
         ))}
         {orderTab !== 'accepted' && orderTab !== 'rejected' && <p>Select a tab</p>}
-        {orderTab === 'accepted' && acceptedOrders.length === 0 && <p>No accepted orders</p>}
+        {orderTab === 'accepted' && acceptedOrders.length === 0 && <p className=''>No accepted orders</p>}
         {orderTab === 'rejected' && rejectedOrders.length === 0 && <p>No rejected orders</p>}
       </div>
+
+      
     </div>
+
+    
   );
+  
 
             case 'profile':
                 return (
@@ -536,15 +594,47 @@ const handleDelete = (medId) => {
         }
     };
 
-    return (
-        <DashboardLayout 
-            title="Welcome to Your Pharmacy Dashboard" 
-            subtitle="Manage your pharmacy operations efficiently and grow your business." 
-            navLinks={navLinks}
-        >
-            {renderContent()}
-        </DashboardLayout>
-    );
+   return (
+    <DashboardLayout 
+        title="Welcome to Your Pharmacy Dashboard" 
+        subtitle="Manage your pharmacy operations efficiently and grow your business." 
+        navLinks={navLinks}
+    >
+        {renderContent()}
+
+        {/* ⬅️ Paste the order popup here */}
+        {viewingOrder && (
+          <div className="popup-overlay" onClick={() => setViewingOrder(null)}>
+            <div className="popup-content" onClick={e => e.stopPropagation()}>
+              <h2>Order Details for {viewingOrder.patientName}</h2>
+
+              <p><strong>Payment Method:</strong> {viewingOrder.paymentMethod}</p>
+              <p><strong>Status:</strong> {viewingOrder.status}</p>
+
+              <p><strong>Medicines:</strong></p>
+              <ul>
+                {viewingOrder.orderDetails.map((med, idx) => (
+                  <li key={idx}>
+                    {med.name} - Qty: {med.quantity} - Rs. {med.price}
+                  </li>
+                ))}
+              </ul>
+
+              <p>
+                <strong>Prescription:</strong>{" "}
+                {viewingOrder.prescriptionUrl 
+                  ? <a href={viewingOrder.prescriptionUrl} target="_blank" rel="noreferrer">View</a>
+                  : "Not Provided"}
+              </p>
+
+              <button className="action-btn action-reject" onClick={() => setViewingOrder(null)}>Close</button>
+            </div>
+          </div>
+        )}
+    </DashboardLayout>
+);
+
+    
 };
 
 export default PharmacyDashboard;
