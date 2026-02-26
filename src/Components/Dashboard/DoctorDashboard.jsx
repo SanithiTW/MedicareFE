@@ -146,6 +146,30 @@ useEffect(() => {
                 ref(database, `patients/${appointment.patientId}/allowedDoctors`),
                 { [currentUserUid]: true }
             );
+
+            // 🔹 Add appointment time to doctor's unavailable periods
+            const doctorRef = ref(database, `doctors/${currentUserUid}/workingHours/unavailable`);
+            const snap = await get(doctorRef);
+            const existingUnavailable = snap.exists() ? snap.val() : [];
+
+            const newUnavailable = {
+                date: appointment.date,
+                start: appointment.time,
+                end: appointment.time, // If appointment has endTime, use that
+                fromAppointment: true, // Flag to identify auto-generated slots
+                patientName: appointment.patientName // Optional, for display
+            };
+
+            const updatedUnavailable = [...existingUnavailable, newUnavailable];
+            await update(ref(database, `doctors/${currentUserUid}/workingHours`), { unavailable: updatedUnavailable });
+            setEditData(prev => ({ 
+                ...prev, 
+                workingHours: { ...prev.workingHours, unavailable: updatedUnavailable } 
+            }));
+            setProfileData(prev => ({ 
+                ...prev, 
+                workingHours: { ...prev.workingHours, unavailable: updatedUnavailable } 
+            }));
         }
 
         await update(ref(database, `appointments/${appointmentId}`), { status: newStatus });
@@ -178,7 +202,6 @@ useEffect(() => {
         alert("Failed to update appointment status or send email.");
     }
 };
-
      const handleSaveProfile = async () => {
         if (!currentUserUid) return;
         try {
@@ -524,13 +547,18 @@ const handleWorkingHoursChange = (dayType, field, value) => {
                                     </div>
                                 )}
 
-                                {(editData.workingHours.unavailable || []).map((slot, idx) => (
-                                    <div key={idx} className="unavailable-slot">
-                                        <span>{slot.date} {slot.start} - {slot.end}</span>
-                                        <button className="edit-unavailable-btn" onClick={() => handleEditUnavailable(slot, idx)}>Edit</button>
-                                        <button className="delete-unavailable-btn" onClick={() => handleDeleteUnavailable(idx)}>Delete</button>
-                                    </div>
-                                ))}
+                               {(editData.workingHours.unavailable || []).map((slot, idx) => (
+    <div key={idx} className="unavailable-slot">
+        <span>{slot.date} {slot.start} - {slot.end} {slot.patientName ? `(Appointment)` : ""}</span>
+        
+        { !slot.fromAppointment && (
+            <>
+                <button className="edit-unavailable-btn" onClick={() => handleEditUnavailable(slot, idx)}>Edit</button>
+                <button className="delete-unavailable-btn" onClick={() => handleDeleteUnavailable(idx)}>Delete</button>
+            </>
+        )}
+    </div>
+))}
                             </div>
                         </div>
                     </div>
