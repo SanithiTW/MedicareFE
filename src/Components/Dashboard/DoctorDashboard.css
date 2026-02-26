@@ -1,4 +1,4 @@
-/* src/DoctorDashboard.css */
+/* src/DoctorDashboard.css - REVISED */
 
 /* --- Color Variables --- */
 :root {
@@ -17,7 +17,8 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--color-light-green); 
+    background-color: var(--color-light-green);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* --- Top Header Bar --- */
@@ -27,23 +28,20 @@
     align-items: center;
     padding: 10px 30px;
     background-color: var(--color-white);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
-}
+.header-left { display: flex; align-items: center; }
 
-.header-logo-img {
-    width: 40px;
-    height: 40px;
+.header-logo-img { 
+    width: 50px;
+    height: 50px;
     margin-right: 10px;
 }
 
 .header-title {
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-dark-green);
 }
 
@@ -59,11 +57,11 @@
     cursor: pointer;
 }
 
-/* --- Navigation Bar (Green Strip below header) --- */
+/* --- Navigation Bar --- */
 .dashboard-nav {
     background-color: var(--color-medium-green);
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     padding: 0 30px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -72,13 +70,20 @@
     color: var(--color-white);
     padding: 15px 20px;
     text-decoration: none;
-    font-weight: 500;
-    transition: background-color 0.3s;
+    font-weight: 600;
+    transition: background-color 0.3s, border-bottom 0.3s;
     cursor: pointer;
+    border-bottom: 3px solid transparent;
 }
 
-.nav-link:hover, .nav-link.active {
-    background-color: var(--color-dark-green); 
+.nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid var(--color-dark-green);
+}
+
+.nav-link.active {
+    background-color: var(--color-dark-green);
+    border-bottom: 3px solid var(--color-white);
 }
 
 /* --- Main Content Area --- */
@@ -93,70 +98,74 @@
 }
 
 .welcome-section h1 {
-    font-size: 2rem;
+    font-size: 2.2rem;
     font-weight: 700;
     margin-bottom: 5px;
+    border-bottom: 3px solid var(--color-medium-green);
+    padding-bottom: 5px;
 }
 
 .welcome-section h2 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 400;
-    color: #555;
+    color: #666;
 }
 
 /* --- Card Grid Layout --- */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
+    gap: 25px;
     margin-bottom: 30px;
 }
 
 .card {
     background-color: var(--color-white);
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     padding: 20px;
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s;
+    border-left: 5px solid; /* Color set via inline style in JS */
+    transition: all 0.3s;
 }
 
 .card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .card-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--color-dark-green);
+    color: #555;
 }
 
 .card-icon {
-    width: 24px;
-    height: 24px;
-    color: var(--color-red); 
+    width: 30px;
+    height: 30px;
+    opacity: 0.7;
 }
 
 .card-content h3 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--color-medium-green);
+    font-size: 2.5rem;
+    font-weight: 800;
     margin: 0;
+    color: var(--color-dark-green);
 }
 
-/* --- List/Table Section --- */
+/* --- Profile & List Section --- */
 .list-section, .table-section {
     background-color: var(--color-white);
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     padding: 20px;
     margin-bottom: 30px;
 }
@@ -165,118 +174,254 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--color-gray);
+    border-bottom: 2px solid var(--color-light-green);
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
 
 .list-section-header h3 {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: var(--color-dark-green);
     margin: 0;
 }
 
-.view-details-btn {
-    background-color: var(--color-medium-green);
-    color: var(--color-white);
+/* --- Buttons --- */
+.edit-profile-btn,
+.add-unavailable-btn,
+.save-profile-btn,
+.save-unavailable-btn,
+.delete-unavailable-btn {
     padding: 8px 15px;
-    border: none;
     border-radius: 5px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s;
-}
-
-.view-details-btn:hover {
-    background-color: var(--color-dark-green);
-}
-
-.list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--color-gray);
-}
-
-.list-item:last-child {
-    border-bottom: none;
-}
-
-.item-details p {
-    margin: 0;
-    font-weight: 500;
-    color: var(--color-black);
-}
-
-.item-details small {
-    color: #888;
-}
-
-.item-status {
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 0.8rem;
     font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
 }
 
-.status-confirmed {
-    background-color: var(--color-medium-green);
-    color: var(--color-white);
+/* Colors */
+.edit-profile-btn { background-color: purple; color: var(--color-white); margin-top: 15px; }
+.add-unavailable-btn { background-color: var(--color-red); color: var(--color-white); margin-top: 10px; }
+.save-profile-btn { background-color: var(--color-medium-green); color: var(--color-white); margin-top: 10px; }
+.save-unavailable-btn { background-color: var(--color-accent-blue); color: var(--color-white); margin-top: 15px; width: 100%; }
+.delete-unavailable-btn { background-color: var(--color-red); color: var(--color-white); }
+
+/* Hover Effects */
+.edit-profile-btn:hover,
+.add-unavailable-btn:hover,
+.save-profile-btn:hover,
+.save-unavailable-btn:hover,
+.delete-unavailable-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-.status-pending {
+/* --- Profile Form Layout --- */
+.profile-form {
+    display: flex;
+    gap: 30px;
+}
+
+.form-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-right {
+    flex: 1;
+    background-color: #fff4f4;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+/* --- Unavailable Slots --- */
+.unavailable-slot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+/* Select dropdown */
+.unavailable-slot select {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--color-gray);
+    font-weight: 500;
+    cursor: pointer;
+    background-color: var(--color-white);
+}
+
+/* Input times */
+.unavailable-slot input[type="time"] {
+    padding: 5px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--color-gray);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .dashboard-nav { flex-wrap: wrap; justify-content: flex-start; }
+    .nav-link { padding: 10px 15px; }
+    .card-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .data-table th, .data-table td { padding: 8px 10px; font-size: 0.85rem; }
+    .profile-form { flex-direction: column; }
+    .form-right { margin-top: 20px; }
+}
+
+/* --- Unavailable Period Buttons --- */
+.unavailable-slot button {
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+}
+
+.unavailable-slot .save-unavailable-btn {
     background-color: var(--color-accent-blue);
     color: var(--color-white);
 }
 
-.status-error {
+.unavailable-slot .edit-unavailable-btn {
+    background-color: var(--color-medium-green);
+    color: var(--color-white);
+}
+
+.unavailable-slot .delete-unavailable-btn {
     background-color: var(--color-red);
     color: var(--color-white);
 }
 
-/* --- Table Styles --- */
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
+/* Hover effects */
+.unavailable-slot button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-.data-table th, .data-table td {
-    padding: 12px 15px;
+/* --- Appointment Section --- */
+.appointments-wrapper {
+    margin-top: 20px;
+}
+
+.section-title {
+    margin-bottom: 15px;
+    color: var(--color-dark-green);
+}
+
+/* Pending Cards */
+.pending-card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.appointment-actions button {
+    margin-left: 8px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Buttons */
+.approve-btn {
+    background: var(--color-medium-green);
+    color: white;
+}
+
+.reject-btn {
+    background: var(--color-red);
+    color: white;
+}
+
+.details-btn {
+    background: var(--color-accent-blue);
+    color: white;
+}
+
+/* Tabs */
+.status-tabs {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+}
+
+.status-tabs button {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1px solid var(--color-dark-green);
+    background: white;
+    cursor: pointer;
+}
+
+.status-tabs .active {
+    background: var(--color-dark-green);
+    color: white;
+}
+
+/* Table */
+.appointment-table {
+    width: 100%;
+    margin-top: 15px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.appointment-table th,
+.appointment-table td {
+    padding: 12px;
     text-align: left;
     border-bottom: 1px solid var(--color-gray);
-    font-size: 0.95rem;
 }
 
-.data-table th {
-    background-color: var(--color-light-green);
-    color: var(--color-dark-green);
-    font-weight: 600;
+.appointment-table th {
+    background: var(--color-light-green);
 }
 
-.data-table tr:hover {
-    background-color: #f9f9f9;
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
-/* --- Action Buttons in Tables/Lists --- */
-.action-btn {
-    padding: 5px 10px;
-    margin-right: 5px;
+.modal {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90%;
+}
+
+.modal button {
+    margin-top: 10px;
+    margin-right: 10px;
+    padding: 6px 12px;
+    border-radius: 6px;
     border: none;
-    border-radius: 5px;
     cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: opacity 0.3s;
 }
 
-.action-view {
-    background-color: var(--color-accent-blue);
-    color: var(--color-white);
-}
-
-.action-chat {
-    background-color: var(--color-dark-green);
-    color: var(--color-white);
+.patient-btn {
+    background: var(--color-dark-green);
+    color: white;
 }

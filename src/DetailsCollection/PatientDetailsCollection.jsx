@@ -10,247 +10,245 @@ import API from "../api/api";
 import { auth } from "../Firebase"; 
 import { getAuth, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 
+const FamilyMemberInputs = ({ member, index, handleFamilyChange, deleteFamilyMember }) => (
+  <div style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+
+    <button 
+      type="button" 
+      className="delete-btn"
+      onClick={() => deleteFamilyMember(member.id)}
+    >
+      Delete
+    </button>
+
+    <h4 style={{ color: '#0C6C1E', margin: '0 0 10px 0', fontSize: '1.1rem' }}>
+      Family Member {index + 1}
+    </h4>
+
+    <div className="input-row">
+      <label>Full Name</label>
+      <input 
+        type="text" 
+        value={member.name} 
+        onChange={(e) => handleFamilyChange(member.id, 'name', e.target.value)} 
+      />
+    </div>
+
+    <div className="input-row">
+      <label>Relation</label>
+      <input 
+        type="text" 
+        value={member.relation} 
+        onChange={(e) => handleFamilyChange(member.id, 'relation', e.target.value)} 
+      />
+    </div>
+
+    <div className="input-row">
+      <label>Date of Birth</label>
+      <input 
+        type="date" 
+        value={member.dob} 
+        onChange={(e) => handleFamilyChange(member.id, 'dob', e.target.value)} 
+      />
+    </div>
+
+  </div>
+);
 
 const PatientDetailsCollectionPage = () => {
 
-    
   useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("User logged in:", user.email);
-    } else {
-      console.log("No user logged in");
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("User logged in:", user.email);
+      } else {
+        console.log("No user logged in");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+
+  const initialData = location.state?.userData || {}; 
+
+  const [loading, setLoading] = useState(false);
+  const [edit, setEdit] = useState({
+    name: false,
+    email: false,
   });
 
-  return () => unsubscribe();
-}, []);
+  const initialFamilyMember = { name: '', relation: '', dob: '' };
 
+  const [details, setDetails] = useState({
+    name: initialData.name || '',
+    email: initialData.email || '',
+    password: initialData.password || '', 
+    phone: '',
+    address: '',
+    city: '',
+    province: '',
+    postalCode: '',
+    dob: '',
+    gender: '',
+    nic: '',
+    medicalConditions: '',
+    allergies: '',
+    chronicDiseases: '',
+    currentMedications: '',
+    bloodGroup: '',
+    deliveryAddress: '',
+    altContact: '',
+    profilePhoto: null,           
+    profilePhotoFile: null,       
+    profilePhotoPreview: null,    
+    description: '',
+    familyMembers: [
+      { ...initialFamilyMember, id: Date.now() + 1 }, 
+    ]
+  });
 
-    const navigate = useNavigate();
-    const location = useLocation();
-    const nameRef = useRef(null);
-    const emailRef = useRef(null);
+  const handleChange = (e) => {
+    setDetails({ ...details, [e.target.name]: e.target.value });
+  };
 
-    const initialData = location.state?.userData || {}; 
+  const handleEditToggle = (field) => {
+    setEdit(prev => ({ ...prev, [field]: !prev[field] }));
+    setTimeout(() => {  // wait for render
+      if(field === 'name') nameRef.current?.focus();
+      if(field === 'email') emailRef.current?.focus();
+    }, 0);
+  };
 
-    const [loading, setLoading] = useState(false);
+  const handlePasswordEdit = () => {
+    alert("Password change functionality goes here! (New Password modal/fields)");
+  };
 
-    
-    
-    const [edit, setEdit] = useState({
-        name: false,
-        email: false,
-    });
-    
-    const initialFamilyMember = { name: '', relation: '', dob: '' };
+  const handleFamilyChange = (id, field, value) => {
+    setDetails(prev => ({
+      ...prev,
+      familyMembers: prev.familyMembers.map(member => 
+        member.id === id ? { ...member, [field]: value } : member
+      )
+    }));
+  };
 
-    const [details, setDetails] = useState({
-        name: initialData.name || '',
-        email: initialData.email || '',
-        password: initialData.password || '', 
-        phone: '',
-        address: '',
-        city: '',
-        province: '',
-        postalCode: '',
-        dob: '',
-        gender: '',
-        nic: '',
-        medicalConditions: '',
-        allergies: '',
-        chronicDiseases: '',
-        currentMedications: '',
-        bloodGroup: '',
-        deliveryAddress: '',
-        altContact: '',
-        profilePhoto: null,           
-        profilePhotoFile: null,       
-        profilePhotoPreview: null,    
-
-        description: '',
-        
+  const addFamilyMember = () => {
+    if (details.familyMembers.length < 3) {
+      setDetails(prev => ({
+        ...prev,
         familyMembers: [
-            { ...initialFamilyMember, id: Date.now() + 1 }, 
+          ...prev.familyMembers,
+          { ...initialFamilyMember, id: Date.now() + Math.random() }
         ]
-    });
+      }));
+    }
+  };
 
-    const handleChange = (e) => {
-        setDetails({ ...details, [e.target.name]: e.target.value });
-    };
+  const deleteFamilyMember = (id) => {
+    setDetails(prev => ({
+      ...prev,
+      familyMembers: prev.familyMembers.filter(member => member.id !== id)
+    }));
+  };
 
-    const handleEditToggle = (field) => {
-  setEdit(prev => ({ ...prev, [field]: !prev[field] }));
-  setTimeout(() => {  // wait for render
-    if(field === 'name') nameRef.current?.focus();
-    if(field === 'email') emailRef.current?.focus();
-  }, 0);
-};
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    const handlePasswordEdit = () => {
-        alert("Password change functionality goes here! (New Password modal/fields)");
-    };
+    const previewUrl = URL.createObjectURL(file);
 
-    const handleFamilyChange = (id, field, value) => {
-        setDetails(prev => ({
-            ...prev,
-            familyMembers: prev.familyMembers.map(member => 
-                member.id === id ? { ...member, [field]: value } : member
-            )
-        }));
-    };
+    setDetails(prev => ({
+      ...prev,
+      profilePhotoFile: file,
+      profilePhotoPreview: previewUrl
+    }));
+  };
 
-    const addFamilyMember = () => {
-        if (details.familyMembers.length < 3) {
-            setDetails(prev => ({
-                ...prev,
-                familyMembers: [
-                    ...prev.familyMembers,
-                    { ...initialFamilyMember, id: Date.now() + Math.random() }
-                ]
-            }));
+  const handleFinalRegistration = async (e) => {
+    e.preventDefault();
+
+    setLoading(true);
+    const finalData = { ...initialData, ...details, emailVerified: false };
+    const uid = localStorage.getItem("patient_uid") || finalData.uid;
+    if (!uid) {
+      alert("Missing UID. Complete step 1 first.");
+      return;
+    }
+
+    try {
+      // 1️⃣ Upload profile photo if selected
+      if (details.profilePhotoFile) {
+        const file = details.profilePhotoFile;
+        const fileName = `patient_${uid}_${Date.now()}.${file.name.split('.').pop()}`;
+
+        const { data, error } = await supabase.storage
+          .from("patient-profile-pics")
+          .upload(fileName, file);
+
+        if (error) {
+          console.error(error);
+          alert("Photo upload failed!");
+          return;
         }
-    };
 
-    const deleteFamilyMember = (id) => {
-        setDetails(prev => ({
-            ...prev,
-            familyMembers: prev.familyMembers.filter(member => member.id !== id)
-        }));
-    };
+        const { data: urlData } = supabase.storage
+          .from("patient-profile-pics")
+          .getPublicUrl(fileName);
 
-   
-const handlePhotoSelect = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  // Preview the image
-  const previewUrl = URL.createObjectURL(file);
-
-  setDetails(prev => ({
-    ...prev,
-    profilePhotoFile: file,       // Save file locally
-    profilePhotoPreview: previewUrl
-  }));
-};
-
-
-const handleFinalRegistration = async (e) => {
-  e.preventDefault();
-
-  setLoading(true);
-  const finalData = { ...initialData, ...details };
-  const uid = localStorage.getItem("patient_uid") || finalData.uid;
-  if (!uid) {
-    alert("Missing UID. Complete step 1 first.");
-    return;
-  }
-
-  try {
-    // 1️⃣ Upload profile photo if selected
-    if (details.profilePhotoFile) {
-      const file = details.profilePhotoFile;
-      const fileName = `patient_${uid}_${Date.now()}.${file.name.split('.').pop()}`;
-
-      const { data, error } = await supabase.storage
-        .from("patient-profile-pics")
-        .upload(fileName, file);
-
-      if (error) {
-        console.error(error);
-        alert("Photo upload failed!");
-        return;
+        finalData.profilePhoto = urlData.publicUrl;
       }
 
-      const { data: urlData } = supabase.storage
-        .from("patient-profile-pics")
-        .getPublicUrl(fileName);
+      // 2️⃣ Update `basic` node if name/email changed
+      const basicUpdates = {};
+      if (details.name && details.name !== initialData.name) basicUpdates.name = details.name;
+      if (details.email && details.email !== initialData.email) basicUpdates.email = details.email;
 
-      finalData.profilePhoto = urlData.publicUrl; // Set uploaded URL
+      if (Object.keys(basicUpdates).length > 0) {
+        await API.patch(`/patient/${uid}/update-basic`, basicUpdates);
+      }
+
+      // 3️⃣ If email changed, update Firebase Auth email
+      if (details.email && details.email !== initialData.email) {
+        await verifyBeforeUpdateEmail(auth.currentUser, details.email);
+      }
+
+      delete finalData.profilePhotoFile;
+      delete finalData.profilePhotoPreview;
+
+      // 5️⃣ Save complete profile
+      await API.post(`/patient/${uid}/complete`, finalData);
+
+      // 6️⃣ Send Firebase verification email
+      try {
+        const user = auth.currentUser;
+
+        if (user) {
+          await sendEmailVerification(user);
+          alert("🎉 Registration Complete! Verification email sent.");
+        } else {
+          alert("Registration complete, but could not send verification email.");
+        }
+      } catch (err) {
+        console.error("Email verification error:", err);
+      }
+
+      // 7️⃣ Navigate to verify-email page
+      navigate('/VerifyEmail', { state: { email: details.email, uid } });
+
+    } catch (err) {
+      console.error("patient complete error:", err);
+      const msg = err?.response?.data?.error || err.message;
+      alert("Registration failed: " + msg);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // 2️⃣ Update `basic` node if name/email changed
-    const basicUpdates = {};
-    if (details.name && details.name !== initialData.name) basicUpdates.name = details.name;
-    if (details.email && details.email !== initialData.email) basicUpdates.email = details.email;
-
-    if (Object.keys(basicUpdates).length > 0) {
-      await API.patch(`/patient/${uid}/update-basic`, basicUpdates);
-    }
-
-    // 3️⃣ If email changed, update Firebase Auth email
-    if (details.email && details.email !== initialData.email) {
-      await API.patch(`/patient/${uid}/update-email`, { email: details.email });
-    }
-
-    // 4️⃣ Remove temporary file references
-    delete finalData.profilePhotoFile;
-    delete finalData.profilePhotoPreview;
-
-
-
-// 5️⃣ Save complete profile
-await API.post(`/patient/${uid}/complete`, finalData);
-
-// 6️⃣ Send Firebase verification email
-try {
-  const auth = getAuth();
-  const user = auth.currentUser;
-
-  if (auth.currentUser) {
-    await sendEmailVerification(user);
-    alert("🎉 Registration Complete! Verification email sent.");
-  } else {
-    alert("Registration complete, but could not send verification email.");
-  }
-} catch (err) {
-  console.error("Email verification error:", err);
-}
-
-// 7️⃣ Navigate to verify-email page
-navigate('/VerifyEmail', { state: { email: details.email, uid } });
-
-
-
-
-  } catch (err) {
-    console.error("patient complete error:", err);
-    const msg = err?.response?.data?.error || err.message;
-    alert("Registration failed: " + msg);
-  }
-
-  finally {
-    setLoading(false); // ✅ stop loading
-  }
-};
-
-    const FamilyMemberInputs = ({ member, index }) => (
-        <div key={member.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-            {details.familyMembers.length > 0 && (
-                 <button 
-                    type="button" 
-                    className="delete-btn"
-                    onClick={() => deleteFamilyMember(member.id)}
-                >
-                    Delete
-                </button>
-            )}
-            <h4 style={{ color: '#0C6C1E', margin: '0 0 10px 0', fontSize: '1.1rem' }}>Family Member {index + 1}</h4>
-            <div className="input-row">
-                <label htmlFor={`family_name_${member.id}`}>Full Name</label>
-                <input type="text" id={`family_name_${member.id}`} value={member.name} onChange={(e) => handleFamilyChange(member.id, 'name', e.target.value)} />
-            </div>
-            <div className="input-row">
-                <label htmlFor={`family_relation_${member.id}`}>Relation</label>
-                <input type="text" id={`family_relation_${member.id}`} value={member.relation} onChange={(e) => handleFamilyChange(member.id, 'relation', e.target.value)} />
-            </div>
-            <div className="input-row">
-                <label htmlFor={`family_dob_${member.id}`}>Date of Birth</label>
-                <input type="date" id={`family_dob_${member.id}`} value={member.dob} onChange={(e) => handleFamilyChange(member.id, 'dob', e.target.value)} />
-            </div>
-            <div style={{ clear: 'both' }}></div> {/* Clear float */}
-        </div>
-    );
 
 
     return (
@@ -407,8 +405,14 @@ navigate('/VerifyEmail', { state: { email: details.email, uid } });
                         {/* 5. Family Members */}
                         <h3>👨‍👩‍👧‍👦 Family Members (Up to 3)</h3>
                         {details.familyMembers.map((member, index) => (
-                            <FamilyMemberInputs member={member} index={index} key={member.id} />
-                        ))}
+  <FamilyMemberInputs
+    key={member.id}
+    member={member}
+    index={index}
+    handleFamilyChange={handleFamilyChange}
+    deleteFamilyMember={deleteFamilyMember}
+  />
+))}
                         
                         {details.familyMembers.length < 3 && (
                             <button 

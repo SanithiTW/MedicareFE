@@ -4,10 +4,12 @@ import "./PatientDashboard.css";
 import MediChatBot from "./Chatbot/MediChatBot";
 
 
+import DoctorListing from "../../DoctorListing/DoctorListing";
+import DoctorSearch from "../../DoctorSearch/DoctorSearch";
+
 // 🔹 Firebase
 import { ref, get } from "firebase/database";
 import { database } from "../../Firebase"; 
-
 
 import Logo from "../../assets/Logo.jpeg";
 import UserImg from "../../assets/user.png";
@@ -23,48 +25,50 @@ export default function PatientDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const containerRef = useRef();
   const chatWrapperRef = useRef(); 
-  const [profilePhoto, setProfilePhoto] = useState(null); // 👈 NEW
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-  const uid = localStorage.getItem("auth_uid");
-  const role = localStorage.getItem("auth_role");
-
-  if (!uid || role !== "Patient") {
-    navigate("/"); // go back to login page
-  }
-}, [navigate]);
-
-
-  console.log("Loaded profile photo URL:", profilePhoto);
+  // 🔹 ADDED
+  const [showDoctorPopup, setShowDoctorPopup] = useState(false);
+  const [showDoctorResults, setShowDoctorResults] = useState(false);
+  const [doctorFilters, setDoctorFilters] = useState({
+    name: "",
+    specialization: "",
+    date: "",
+    time: "",
+  });
 
   useEffect(() => {
-  const uid = localStorage.getItem("auth_uid");
+    const uid = localStorage.getItem("auth_uid");
+    const role = localStorage.getItem("auth_role");
 
-  if (!uid) return;
+    if (!uid || role !== "Patient") {
+      navigate("/");
+    }
+  }, [navigate]);
 
-  const profileRef = ref(database, `patients/${uid}/profile`);
+  useEffect(() => {
+    const uid = localStorage.getItem("auth_uid");
+    if (!uid) return;
 
-  get(profileRef)
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        if (data.profilePhoto) {
-          setProfilePhoto(data.profilePhoto); // Supabase URL
+    const profileRef = ref(database, `patients/${uid}/profile`);
+    get(profileRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.profilePhoto) {
+            setProfilePhoto(data.profilePhoto);
+          }
         }
-      }
-    })
-    .catch((err) => console.error("Profile load error:", err));
-}, []);
+      })
+      .catch((err) => console.error("Profile load error:", err));
+  }, []);
 
-
-  // Smooth appear animation
   useEffect(() => {
     const el = containerRef.current;
     requestAnimationFrame(() => el?.classList?.add("appear"));
   }, []);
 
-  // Close chat when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -80,13 +84,11 @@ export default function PatientDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [chatOpen]);
 
-  // NEW: Logout handler
- const handleLogout = () => {
-  localStorage.removeItem("auth_uid");
-  localStorage.removeItem("auth_role");
-  navigate("/");
-};
-
+  const handleLogout = () => {
+    localStorage.removeItem("auth_uid");
+    localStorage.removeItem("auth_role");
+    navigate("/");
+  };
 
   return (
     <div className="pd-root" ref={containerRef}>
@@ -104,37 +106,37 @@ export default function PatientDashboard() {
         </div>
 
         <div className="pd-header-right">
-          {/* UPDATED: Logout Button */}
           <button className="pd-btn-text" onClick={handleLogout}>
             Log Out
           </button>
           <img src={BellImg} alt="bell" className="pd-icon small" />
           <img
-  src={profilePhoto || UserImg}
-  alt="user"
-  className="pd-user clickable"
-  crossOrigin="anonymous"
-  referrerPolicy="no-referrer"
-  onError={(e) => {
-    console.error("Image load failed:", profilePhoto);
-    e.target.src = UserImg;
-  }}
-  onClick={() => navigate("/patientProfile")}
-/>
-
-
+            src={profilePhoto || UserImg}
+            alt="user"
+            className="pd-user clickable"
+            onClick={() => navigate("/patientProfile")}
+          />
         </div>
       </header>
 
       {/* Navigation */}
       <nav className="pd-nav">
         <ul>
-          <li className="active">Channel Doctor</li>
-          <li>Doctor</li>
-          <li>Nearest Pharmacy</li>
-          <li>Set Reminder</li>
-          <li>Order Medicine</li>
-          <li>Medicine Information</li>
+          <li
+            className="active"
+            onClick={() => setShowDoctorPopup(true)} // ✅ ADDED
+          >
+            Search Doctor
+          </li>
+          <li onClick={() => navigate("/doctor-listing")}>Doctor</li>
+          <li onClick={() => navigate("/pharmacy-map")}>
+  Nearest Pharmacy
+</li>
+          
+          <li onClick={() => navigate("/pharmacy-store")}>
+            Order Medicine
+          </li>
+          
         </ul>
       </nav>
 
@@ -174,17 +176,9 @@ export default function PatientDashboard() {
           <button className="pd-btn small">View Details</button>
         </div>
 
-        <div className="status-card wider">
-          <div className="status-title">New Reminder</div>
-          <div className="status-icon">
-            <img src={ReminderImg} alt="reminder" />
-          </div>
-          <div className="status-body">
-            <div className="muted">3 reminders set</div>
-          </div>
-          <button className="pd-btn small">View Details</button>
-        </div>
+       
       </section>
+
 
       {/* Main Grid */}
       <main className="pd-grid">
@@ -274,22 +268,130 @@ export default function PatientDashboard() {
         </section>
       </main>
 
-      {/* Chat Wrapper */}
-      <div className="chat-wrapper" ref={chatWrapperRef}>
-        {/* Floating Chatbot Button */}
-        <button
-          className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
-          onClick={() => setChatOpen(true)}
-          aria-label="Open chat"
+      {/* Doctor Search Popup */}
+      {showDoctorPopup && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDoctorPopup(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
         >
-          <img src={ChatbotIcon} alt="chat" />
-        </button>
+          <div
+            className="modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              padding: "24px",
+              borderRadius: "12px",
+              position: "relative",
+              width: "320px",
+            }}
+          >
+            <button
+              onClick={() => setShowDoctorPopup(false)}
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                border: "none",
+                background: "transparent",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
 
-        {/* Chatbot Panel */}
-        <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
-          <MediChatBot onClose={() => setChatOpen(false)} />
+            <h2 style={{ marginBottom: "16px", textAlign: "center" }}>
+              Search Doctor
+            </h2>
+
+            <form
+              className="search-form vertical-form doctor-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                // Validate all fields
+                const { name, specialization, date, time } = doctorFilters;
+                if (!name || !specialization || !date || !time) {
+                  alert("All fields are required!");
+                  return;
+                }
+
+                setShowDoctorPopup(false);
+
+                navigate("/doctor-search", {
+                  state: { filters: doctorFilters },
+                });
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Doctor Name"
+                value={doctorFilters.name}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, name: e.target.value })
+                }
+              />
+              <input
+                type="text"
+                placeholder="Specialization"
+                value={doctorFilters.specialization}
+                onChange={(e) =>
+                  setDoctorFilters({
+                    ...doctorFilters,
+                    specialization: e.target.value,
+                  })
+                }
+              />
+              <input
+                type="date"
+                value={doctorFilters.date}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, date: e.target.value })
+                }
+              />
+              <input
+                type="time"
+                value={doctorFilters.time}
+                onChange={(e) =>
+                  setDoctorFilters({ ...doctorFilters, time: e.target.value })
+                }
+              />
+              <button type="submit" className="search-button">
+                Search Doctor
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
+
+
+
+
+
+
+      {/* Chat Wrapper */}
+<div className="chat-wrapper" ref={chatWrapperRef}>
+  <button
+    className={`chat-bubble ${chatOpen ? "hidden" : ""}`}
+    onClick={() => setChatOpen(true)}
+    aria-label="Open chat"
+  >
+    <img src={ChatbotIcon} alt="chat" />
+  </button>
+
+  <div className={`chat-panel ${chatOpen ? "open" : ""}`} aria-hidden={!chatOpen}>
+    <MediChatBot onClose={() => setChatOpen(false)} />
+  </div>
+</div>
     </div>
   );
 }

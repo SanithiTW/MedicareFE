@@ -6,7 +6,7 @@ import UserIcon from '../assets/user.png';
 import HomeIcon from '../assets/Home.png';
 
 import { useNavigate } from 'react-router-dom';
-import { signOut } from "firebase/auth";
+import { signOut, sendPasswordResetEmail } from "firebase/auth";
 import { ref, get, update, set } from 'firebase/database';
 import { auth, database } from '../Firebase';
 import { supabase } from "../supabase"; 
@@ -42,6 +42,9 @@ const PatientProfile = () => {
 
     const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
     const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+    const [activeReportOwner, setActiveReportOwner] = useState("SELF");
+
+
 
     // Load user data
     useEffect(() => {
@@ -73,6 +76,9 @@ const PatientProfile = () => {
                     alternativeContact: data.alternativeContact || '',
                     description: data.description || '',
                 });
+                
+                setActiveReportOwner(data.name || user.displayName || "SELF");
+
                 setExtraDetails(data.extraDetails || []);
                 setFamilyMembers(data.familyMembers || []);
                 setDocuments(data.documents || []);
@@ -94,6 +100,21 @@ const PatientProfile = () => {
             setFamilyMembers(familyMembers.map(m => m.id === memberId ? { ...m, [name]: value } : m));
         }
     };
+
+    const handleChangePassword = async () => {
+    if (!patientData?.email) {
+        alert("Email not found for this user!");
+        return;
+    }
+
+    try {
+        await sendPasswordResetEmail(auth, patientData.email);
+        alert(`A password reset link has been sent to ${patientData.email}. Please check your email.`);
+    } catch (err) {
+        console.error("Failed to send reset email:", err);
+        alert("Failed to send password reset email. Please try again.");
+    }
+};
 
     const handleProfilePhotoSelect = (e) => {
         const file = e.target.files[0];
@@ -418,6 +439,27 @@ const PatientProfile = () => {
     };
 
     if (!patientData) return <p>Loading profile...</p>;
+// ================================
+// REPORTS
+// ================================
+const filteredReports = documents.filter(doc =>
+  doc.category === "report" &&
+  (activeReportOwner === "SELF"
+    ? doc.member === patientData.fullName
+    : doc.member === activeReportOwner)
+);
+
+// ================================
+// PRESCRIPTIONS
+// ================================
+const filteredPrescriptions = documents.filter(doc =>
+  doc.category === "prescription" &&
+  (activeReportOwner === "SELF"
+    ? doc.member === patientData.fullName
+    : doc.member === activeReportOwner)
+);
+
+
 
     const ProfileHeader = () => (
         <div className="dashboard-header">
@@ -452,7 +494,12 @@ const PatientProfile = () => {
                     <div className="welcome-info">
                         <h2>Hello, {patientData.fullName}!</h2>
                         <p>Manage your account, health records, and family details here.</p>
-                        <button className="change-password-btn" onClick={() => alert("Redirecting to Change Password page...")}>Change Password</button>
+                        <button
+  className="change-password-btn"
+  onClick={handleChangePassword}
+>
+  Change Password
+</button>
                     </div>
                 </div>
 
@@ -587,7 +634,7 @@ const PatientProfile = () => {
                 {/* Documents Section */}
                 <div className="profile-section document-section">
                     <div className="section-header">
-                        <h3>📁 Reports & Prescriptions</h3>
+                        <h3>📁 Reports </h3>
                         <div className="document-upload-controls">
                             <label htmlFor="member-select" className="member-select-label">Upload For:</label>
                             <select
@@ -643,6 +690,28 @@ const PatientProfile = () => {
                         </div>
                     )}
 
+                    <div className="report-owner-tabs">
+  <button
+    className={activeReportOwner === "SELF" ? "active-tab" : ""}
+    onClick={() => setActiveReportOwner("SELF")}
+  >
+    {patientData.fullName} (Self)
+  </button>
+
+  {familyMembers.map(member => (
+    <button
+      key={member.id}
+      className={activeReportOwner === member.name ? "active-tab" : ""}
+      onClick={() => setActiveReportOwner(member.name)}
+    >
+      {member.name}
+    </button>
+  ))}
+</div>
+
+
+
+
                     <table className="document-table">
                         <thead>
                             <tr>
@@ -653,18 +722,27 @@ const PatientProfile = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {documents.map(doc => (
-                                <tr key={doc.id}>
-                                    <td>{doc.name}</td>
-                                    <td>{doc.member}</td>
-                                    <td>{doc.date}</td>
-                                    <td>
-                                        <button className="action-view" onClick={() => handleViewDocument(doc)}>View</button>
-                                        <button className="action-delete" onClick={() => handleDeleteDocument(doc.id)}>🗑️</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+  {filteredReports.length === 0 ? (
+    <tr>
+      <td colSpan="4" style={{ textAlign: "center", color: "#888" }}>
+        No reports available
+      </td>
+    </tr>
+  ) : (
+    filteredReports.map(doc => (
+      <tr key={doc.id}>
+        <td>{doc.name}</td>
+        <td>{doc.member}</td>
+        <td>{doc.date}</td>
+        <td>
+          <button className="action-view" onClick={() => handleViewDocument(doc)}>View</button>
+          <button className="action-delete" onClick={() => handleDeleteDocument(doc.id)}>🗑️</button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
+
                     </table>
                 </div>
 
@@ -673,7 +751,66 @@ const PatientProfile = () => {
                 {isMemberEditOpen && (
                     <FamilyMemberModal member={editingMember} onClose={() => setIsMemberEditOpen(false)} />
                 )}
+
+                            {/* Prescriptions Section */}
+<div className="profile-section document-section">
+  <div className="section-header">
+    <h3>🩺 Prescriptions</h3>
+  </div>
+
+  {/* Tabs */}
+  <div className="report-owner-tabs">
+    <button
+      className={activeReportOwner === "SELF" ? "active-tab" : ""}
+      onClick={() => setActiveReportOwner("SELF")}
+    >
+      {patientData.fullName} (Self)
+    </button>
+
+    {familyMembers.map(member => (
+      <button
+        key={member.id}
+        className={activeReportOwner === member.name ? "active-tab" : ""}
+        onClick={() => setActiveReportOwner(member.name)}
+      >
+        {member.name}
+      </button>
+    ))}
+  </div>
+
+  <table className="document-table">
+    <thead>
+      <tr>
+        <th>Prescription Name</th>
+        <th>Patient</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredPrescriptions.length === 0 ? (
+        <tr>
+          <td colSpan="4" style={{ textAlign: "center", color: "#888" }}>
+            No prescriptions available
+          </td>
+        </tr>
+      ) : (
+        filteredPrescriptions.map(doc => (
+          <tr key={doc.id}>
+            <td>{doc.name}</td>
+            <td>{doc.member}</td>
+            <td>{doc.date}</td>
+            <td>
+              <button className="action-view" onClick={() => handleViewDocument(doc)}>View</button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
             </div>
+
         </div>
     );
 };

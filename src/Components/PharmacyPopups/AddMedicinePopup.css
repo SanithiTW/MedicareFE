@@ -1,0 +1,144 @@
+/* 🔹 Overlay */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* 🔹 Popup Container */
+.popup-content {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 14px;
+    width: 600px;                 /* wider for many fields */
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+/* 🔹 Scrollbar Styling */
+.popup-content::-webkit-scrollbar {
+    width: 6px;
+}
+.popup-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+/* 🔹 Title */
+.popup-content h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #2c3e50;
+}
+
+/* 🔹 Form Labels */
+.medicine-form label {
+    display: block;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+/* 🔹 Inputs */
+.medicine-form input, 
+.medicine-form textarea, 
+.medicine-form select {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 6px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    outline: none;
+    background-color: #fafafa;
+}
+
+/* 🔹 Focus Effect */
+.medicine-form input:focus,
+.medicine-form textarea:focus,
+.medicine-form select:focus {
+    border-color: #18D23A;
+    box-shadow: 0 0 0 3px rgba(24, 210, 58, 0.15);
+    background-color: #fff;
+}
+
+/* 🔹 Textarea */
+.medicine-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* 🔹 Multi Select (Categories) */
+.medicine-form select[multiple] {
+    height: 100px;
+}
+
+/* 🔹 Image Preview */
+.image-preview {
+    margin-top: 10px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+/* 🔹 Buttons Container */
+.form-buttons {
+    margin-top: 25px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* 🔹 Buttons Base */
+.form-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: 0.2s ease;
+}
+
+/* 🔹 Submit Button */
+.form-buttons button:first-child {
+    background-color: #18D23A;
+    color: white;
+}
+
+.form-buttons button:first-child:hover {
+    background-color: #12b62f;
+}
+
+/* 🔹 Cancel Button */
+.form-buttons button:last-child {
+    background-color: #e0e0e0;
+}
+
+.form-buttons button:last-child:hover {
+    background-color: #cfcfcf;
+}
+
+/* 🔹 Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

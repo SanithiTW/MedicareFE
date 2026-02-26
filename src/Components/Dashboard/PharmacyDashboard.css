@@ -268,3 +268,256 @@
     background-color: var(--color-dark-green);
     color: var(--color-white);
 }
+
+/* --- Popup Overlay --- */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* --- Popup Content --- */
+.popup-content {
+  background-color: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  width: 500px;
+  max-width: 95%;
+  max-height: 90%;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Form Elements --- */
+.medicine-form label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  font-weight: 500;
+  color: #07741B;
+}
+
+.medicine-form input[type="text"],
+.medicine-form input[type="number"],
+.medicine-form input[type="date"],
+.medicine-form select,
+.medicine-form textarea {
+  margin-top: 5px;
+  padding: 8px 10px;
+  border: 1px solid #D9D9D9;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.medicine-form input:focus,
+.medicine-form select:focus,
+.medicine-form textarea:focus {
+  border-color: #18D23A;
+}
+
+/* --- Prescription Checkbox --- */
+.medicine-form input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #07741B;
+  cursor: pointer;
+}
+
+/* --- Image Preview --- */
+.image-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid #D9D9D9;
+}
+
+/* --- Buttons --- */
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-buttons button {
+  padding: 8px 18px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-buttons button[type="submit"] {
+  background-color: #18D23A;
+  color: #fff;
+}
+
+.form-buttons button[type="submit"]:disabled {
+  background-color: #BCFFC6;
+  cursor: not-allowed;
+}
+
+.form-buttons button[type="button"] {
+  background-color: #EC1414;
+  color: #fff;
+}
+/* --- Orders & Prescriptions Tab Specific Styles --- */
+
+/* Tab Navigation for Order History */
+.order-tabs-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+    border-bottom: 2px solid var(--color-gray);
+    padding-bottom: 0;
+}
+
+.order-history-tab {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.3s ease;
+    border-radius: 8px 8px 0 0;
+}
+
+.order-history-tab:hover {
+    color: var(--color-dark-green);
+    background-color: rgba(24, 210, 58, 0.1);
+}
+
+.order-history-tab.active-tab {
+    color: var(--color-white);
+    background-color: var(--color-dark-green);
+}
+
+/* Order Item Cards */
+.order-card {
+    background-color: var(--color-white);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--color-gray);
+}
+
+.order-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* New/Pending Order Styling */
+.order-pending {
+    border-left: 6px solid var(--color-red) !important;
+    background-color: #fffafa;
+}
+
+/* Accepted Order Styling */
+.order-accepted {
+    border-left: 6px solid var(--color-dark-green) !important;
+}
+
+/* Rejected Order Styling */
+.order-rejected {
+    border-left: 6px solid var(--color-red) !important;
+    opacity: 0.8;
+}
+
+/* Order Info Details */
+.order-info h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: var(--color-black);
+}
+
+.order-info p {
+    margin: 2px 0;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.payment-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background-color: var(--color-light-green);
+    color: var(--color-dark-green);
+}
+
+/* Specific Action Buttons */
+.action-accept {
+    background-color: var(--color-dark-green);
+    color: white;
+}
+
+.action-accept:hover {
+    background-color: #055a15;
+}
+
+/* --- Order Details Popup Specifics --- */
+.order-popup-details {
+    margin-top: 15px;
+    border-top: 1px solid var(--color-gray);
+    padding-top: 15px;
+}
+
+.med-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--color-gray);
+}
+
+.med-list-item:last-child {
+    border-bottom: none;
+}
+
+.prescription-link {
+    color: var(--color-accent-blue);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.order-total {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-dark-green);
+}
+
+/* Empty State Styling */
+.empty-state-msg {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-style: italic;
+    background: #fdfdfd;
+    border-radius: 8px;
+    border: 1px dashed var(--color-gray);
+}

@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 // --- Firebase ---
 import { ref, set, push, onValue } from "firebase/database";
 import { firebaseConfig, auth, database } from "../../Firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 
 import { 
@@ -52,8 +53,25 @@ const pendingApprovalsData = [
 
 
 // --- Layout Component ---
-    const DashboardLayout = ({ title, subtitle, navLinks, children, activeTab, onNavClick, onLogout, showDoctorModal,setShowDoctorModal,newDoctor, handleDoctorInputChange, handleCreateDoctor }) => (
+    const DashboardLayout = ({
+  title,
+  subtitle,
+  navLinks,
+  children,
+  activeTab,
+  onNavClick,
+  onLogout,
+  showDoctorModal,
+  setShowDoctorModal,
+  newDoctor,
+  handleDoctorInputChange,
+  handleCreateDoctor,
 
+  // 🔥 ADD THESE
+  showDoctorProfileModal,
+  setShowDoctorProfileModal,
+  selectedDoctor
+}) => (
         <div className="admin-dashboard-container">
         <div className="dashboard-header">
             <div className="header-left">
@@ -86,6 +104,49 @@ const pendingApprovalsData = [
                     <p className="subtitle">{subtitle}</p>
                 </div>
                 {children}
+
+                {/* --- Doctor Profile Modal --- */}
+{showDoctorProfileModal && selectedDoctor && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>Doctor Profile</h2>
+
+      <div className="form-group">
+        <label>Name</label>
+        <input type="text" value={selectedDoctor.name || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Email</label>
+        <input type="text" value={selectedDoctor.email || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Specialization</label>
+        <input type="text" value={selectedDoctor.specialization || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>License</label>
+        <input type="text" value={selectedDoctor.license || ''} readOnly />
+      </div>
+
+      <div className="form-group">
+        <label>Rating</label>
+        <input type="text" value={`${selectedDoctor.rating ?? 0} ⭐`} readOnly />
+      </div>
+
+      <div className="modal-actions">
+        <button
+          className="action-btn action-reject"
+          onClick={() => setShowDoctorProfileModal(false)}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
                 {/* --- Doctor Modal --- */}
                 {showDoctorModal && (
@@ -125,7 +186,28 @@ const pendingApprovalsData = [
 
 const AdminDashboard = () => {
 
-    
+    // 🔹 Doctor profile modal state
+const [showDoctorProfileModal, setShowDoctorProfileModal] = useState(false);
+const [selectedDoctor, setSelectedDoctor] = useState(null);
+const handleViewDoctor = (doctor) => {
+  setSelectedDoctor(doctor);
+  setShowDoctorProfileModal(true);
+};
+
+    const updatePharmacyStatus = async (id, newStatus) => {
+  try {
+    await set(ref(database, `pharmacies/${id}/status`), {
+      value: newStatus,
+      updatedAt: Date.now()
+    });
+    alert(`Pharmacy ${newStatus} successfully`);
+  } catch (error) {
+    console.error("Error updating pharmacy:", error);
+    alert("Failed to update pharmacy status");
+  }
+};
+
+
 
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('home');
@@ -133,15 +215,18 @@ const AdminDashboard = () => {
     // --- Modal & form state for new doctor ---
     const [showDoctorModal, setShowDoctorModal] = useState(false);
     const [newDoctor, setNewDoctor] = useState({
-        name: '',
-        specialization: '',
-        license: '',
-        email: '',
-        rating: 0,
-        status: 'Pending'
-    });
+    name: '',
+    specialization: '',
+    license: '',
+    email: '',
+    rating: 0,
+    role: 'Doctor' // ✅ add here
+});
 
     const [doctorsData, setDoctorsData] = useState([]);
+    const [pharmaciesData, setPharmaciesData] = useState([]);
+    
+
     const adminEmailRef = useRef('');
 
     const adminNavLinks = [
@@ -177,6 +262,9 @@ const AdminDashboard = () => {
 
     const handleCreateDoctor = async () => {
     try {
+ console.log("🔥 MAIN AUTH USER:", auth.currentUser);
+    console.log("🔥 SECONDARY AUTH USER:", secondaryAuth.currentUser);
+
         if (!newDoctor.email) {
             alert("Please provide email for the doctor.");
             return;
@@ -204,29 +292,137 @@ const AdminDashboard = () => {
     newDoctor.email,
     password
 );
+console.log("👤 Created doctor UID:", userCredential.user.uid);
 await secondaryAuth.signOut();
         const doctorId = userCredential.user.uid;
 
         // Save doctor in database
-        await set(ref(database, `doctors/${doctorId}`), {
-            name: newDoctor.name,
-            specialization: newDoctor.specialization,
-            license: newDoctor.license,
-            email: newDoctor.email,
-            rating: Number(newDoctor.rating),
-            status: newDoctor.status,
-            createdBy: adminEmail, // ✅ now correct
-            generatedPassword: password
-        });
+        try {
+  console.log("🚀 Writing doctor to:", `doctors/${doctorId}`);
+
+  await set(ref(database, `doctors/${doctorId}`), {
+    name: newDoctor.name,
+    specialization: newDoctor.specialization,
+    license: newDoctor.license,
+    email: newDoctor.email,
+    rating: Number(newDoctor.rating),
+    role: newDoctor.role,
+    createdBy: adminEmail,
+    mustChangePassword: true,
+    status: {
+      value: "active",
+      updatedAt: Date.now()
+    }
+  });
+
+  console.log("✅ Doctor write SUCCESS");
+} catch (err) {
+  console.error("❌ Doctor write FAILED:", err);
+  throw err;
+}
+
+
+await fetch("http://localhost:8080/api/admin/sendDoctorCredentials", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: newDoctor.email,
+    password: password,
+    name: newDoctor.name
+  })
+});
 
         alert(`Doctor created successfully!\nGenerated password: ${password}`);
         setShowDoctorModal(false);
-        setNewDoctor({ name: '', specialization: '', license: '', email: '', rating: 0, status: 'Pending' });
+        setNewDoctor({ name: '', specialization: '', license: '', email: '', rating: 0 });
     } catch (error) {
         console.error(error);
         alert("Failed to create doctor. See console for details.");
     }
 };
+
+const handleSuspendDoctor = async (doctorId) => {
+  try {
+    await set(ref(database, `doctors/${doctorId}/status`), {
+      value: "suspended",
+      updatedAt: Date.now()
+    });
+    alert("Doctor suspended successfully");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to suspend doctor");
+  }
+};
+
+const handleActivateDoctor = async (doctorId) => {
+  try {
+    await set(ref(database, `doctors/${doctorId}/status`), {
+      value: "active",
+      updatedAt: Date.now()
+    });
+    alert("Doctor activated successfully");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to activate doctor");
+  }
+};
+
+const handleAcceptPharmacy = async (pharmacy) => {
+  try {
+    if (!pharmacy.officialEmail) {
+      alert("Pharmacy email missing!");
+      return;
+    }
+
+    const tempPassword = generateRandomPassword();
+
+    // 1️⃣ Call backend to create Auth user with same UID
+    const response = await fetch("http://localhost:8080/api/admin/createPharmacy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        uid: pharmacy.id,           // Use the existing Realtime DB UID
+        email: pharmacy.officialEmail,
+        password: tempPassword
+      })
+    });
+
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error);
+
+    // 2️⃣ Update Realtime Database
+    await set(ref(database, `pharmacies/${pharmacy.id}`), {
+  ...pharmacy,
+  status: {
+    value: "accepted",
+    updatedAt: Date.now()
+  },
+  authUid: pharmacy.id,
+  role: pharmacy.role || "Pharmacy",
+  mustChangePassword: true   // ⭐ ADD THIS
+});
+
+await fetch("http://localhost:8080/api/admin/sendPharmacyCredentials", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: pharmacy.officialEmail,
+    password: tempPassword,
+    name: pharmacy.pharmacyname || pharmacy.name
+  })
+});
+
+   
+
+    
+
+    alert(`Pharmacy accepted successfully!\nPassword has been emailed to them.`);
+  } catch (error) {
+    console.error(error);
+    alert("Failed to accept pharmacy.");
+  }
+};
+
 
 
     // --- Fetch doctors + admin email safely ---
@@ -237,7 +433,41 @@ await secondaryAuth.signOut();
             adminEmailRef.current = user.email;
         }
     });
+
+    // 🔹 Fetch pharmacies
+const pharmaciesRef = ref(database, 'pharmacies');
+
+const unsubscribePharmacies = onValue(pharmaciesRef, snapshot => {
+  const data = snapshot.val() || {};
+
+  const pharmaciesArray = Object.entries(data).map(([id, pharmacy]) => ({
+  id,
+  ...pharmacy, // first spread the full object
+  pharmacyname: pharmacy.pharmacyname || pharmacy.name || 'N/A',
+  name: pharmacy.name || pharmacy.owner || 'N/A',
+  officialEmail: pharmacy.officialEmail || pharmacy.email || 'N/A',
+  licenseNo: pharmacy.licenseNo || pharmacy.license || 'N/A',
+  province: pharmacy.province || 'N/A',
+  phone: pharmacy.phone || 'N/A',
+  status: (() => {
+      if (!pharmacy.status) return 'pending';
+      if (typeof pharmacy.status === "string") return pharmacy.status.replace(/"/g, '').toLowerCase().trim();
+      if (typeof pharmacy.status === "object" && pharmacy.status.value) return pharmacy.status.value.toLowerCase().trim();
+      return 'pending';
+  })(),
+}));
+
+
+
+
+  console.log("🔥 Fetched pharmacies:", pharmaciesArray);
+  setPharmaciesData(pharmaciesArray);
+});
+
+
+
 console.log("🧪 Database object:", database);
+console.log("🌐 Database URL:", database.app.options.databaseURL);
 const doctorsRef = ref(database, 'doctors');
 console.log("📌 doctorsRef:", doctorsRef.toString());
 
@@ -258,13 +488,17 @@ const unsubscribe = onValue(
   (error) => {
     console.error("❌ onValue error:", error);
   }
+
+  
 );
 
 
     return () => {
-        unsubAuth();
-        unsubscribe();
-    };
+  unsubAuth();
+  unsubscribe();
+  unsubscribePharmacies();
+};
+
 }, []);
 
     
@@ -275,48 +509,340 @@ const unsubscribe = onValue(
     return kpi;
 });
 
+const pendingPharmacies = pharmaciesData.filter(p => p.status === "pending");
+const acceptedPharmacies = pharmaciesData.filter(p => p.status === "accepted");
+const rejectedPharmacies = pharmaciesData.filter(p => p.status === "rejected");
+
+
+console.log("🔹 Pending pharmacies:", pendingPharmacies);
+console.log("🔹 Accepted pharmacies:", acceptedPharmacies);
+console.log("🔹 Rejected pharmacies:", rejectedPharmacies);
+
+
 
     // --- Tab Content Rendering ---
     const renderContent = () => {
-        switch (activeTab) {
-            case 'home':
-                return (
-                    <>
-                        <h2>System Overview</h2>
-                        <div className="card-grid">
-                            {kpisDisplay.map(kpi => (
-                                <div className="card" key={kpi.title} style={{ borderColor: kpi.color, backgroundColor: '#FFFFFF' }}>
-                                    <div className="card-header">
-                                        <div className="card-title" style={{ color: kpi.color }}>{kpi.title}</div>
-                                        {kpi.icon && <img src={kpi.icon} alt="Icon" className="card-icon" />}
-                                    </div>
-                                    <div className="card-content">
-                                        <h3>{kpi.value}</h3>
-                                    </div>
+    switch (activeTab) {
+        case 'home':
+            return (
+                <>
+                    <h2>System Overview</h2>
+                    <div className="card-grid">
+                        {kpisDisplay.map(kpi => (
+                            <div className="card" key={kpi.title} style={{ borderColor: kpi.color, backgroundColor: '#FFFFFF' }}>
+                                <div className="card-header">
+                                    <div className="card-title" style={{ color: kpi.color }}>{kpi.title}</div>
+                                    {kpi.icon && <img src={kpi.icon} alt="Icon" className="card-icon" />}
                                 </div>
-                            ))}
-                        </div>
-                        
-                        <div className="list-section">
-                            <div className="list-section-header">
-                                <h3>Pending Approvals (Quick View)</h3>
-                                <button className="view-details-btn action-approve" onClick={() => setActiveTab('approvals')}>View All</button>
+                                <div className="card-content">
+                                    <h3>{kpi.value}</h3>
+                                </div>
                             </div>
-                            {pendingApprovalsData.slice(0, 3).map((item) => (
-                                <div className="list-item" key={item.id}>
-                                    <div className="item-details">
-                                        <p>{item.name} ({item.id})</p>
-                                        <small className={`status-tag status-${item.status.toLowerCase()}`}>{item.type} | {item.date}</small>
-                                    </div>
-                                    <div>
-                                        <button className="action-btn action-approve">Approve</button>
-                                        <button className="action-btn action-reject">Reject</button>
-                                    </div>
-                                </div>
-                            ))}
+                        ))}
+                    </div>
+
+                    <div className="list-section">
+                        <div className="list-section-header">
+                            <h3>Pending Approvals (Quick View)</h3>
+                            <button className="view-details-btn action-approve" onClick={() => setActiveTab('approvals')}>View All</button>
                         </div>
-                    </>
-                );
+                        {pendingApprovalsData.slice(0, 3).map((item) => (
+                            <div className="list-item" key={item.id}>
+                                <div className="item-details">
+                                    <p>{item.name} ({item.id})</p>
+                                    <small className={`status-tag status-${item.status}`}>{item.type} | {item.date}</small>
+                                </div>
+                                <div>
+                                    <button className="action-btn action-approve">Approve</button>
+                                    <button className="action-btn action-reject">Reject</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+
+        case 'approvals':
+            return (
+                <div className="table-section">
+                    {/* 🔴 Pending Pharmacies */}
+                    <div className="list-section-header">
+                        <h2>Pending Pharmacies ({pendingPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#FFE2E2'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Owner</th>
+                                <th>Email</th>
+                                <th>License</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pendingPharmacies.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" style={{ textAlign: 'center' }}>No pending pharmacies</td>
+                                </tr>
+                            ) : (
+                                pendingPharmacies.map(p => (
+                                    <tr key={p.id}>
+                                        <td>{p.pharmacyname}</td>
+                                        <td>{p.name}</td>
+                                        <td>{p.officialEmail}</td>
+                                        <td>{p.licenseNo}</td>
+                                        <td>{p.province}</td>
+                                        <td>{p.phone}</td>
+                                        <td>
+                                            <button 
+                                                className="action-btn action-approve"
+                                                onClick={() => {
+                                                    if (window.confirm("Accept this pharmacy?")) handleAcceptPharmacy(p);
+                                                }}
+                                            >Accept</button>
+                                            <button 
+                                                className="action-btn action-reject"
+                                                onClick={() => {
+                                                    if (window.confirm("Reject this pharmacy?")) updatePharmacyStatus(p.id, "rejected");
+                                                }}
+                                            >Reject</button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+
+                    {/* 🟢 Accepted Pharmacies */}
+                    <div className="list-section-header" style={{marginTop: "40px"}}>
+                        <h2>Accepted Pharmacies ({acceptedPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#BCFFC6'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {acceptedPharmacies.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className="status-text status-accepted">{p.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* ⚫ Rejected Pharmacies */}
+                    <div className="list-section-header" style={{marginTop: "40px"}}>
+                        <h2>Rejected Pharmacies ({rejectedPharmacies.length})</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#FFD6D6'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rejectedPharmacies.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className="status-text status-rejected">{p.status}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+
+        case 'pharmacy':
+            return (
+                <div className="table-section">
+                    <div className="list-section-header">
+                        <h2>Pharmacy Management</h2>
+                    </div>
+                    <table className="data-table">
+                        <thead>
+                            <tr style={{backgroundColor: '#F0F0F0'}}>
+                                <th>Pharmacy Name</th>
+                                <th>Email</th>
+                                <th>Province</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pharmaciesData.map(p => (
+                                <tr key={p.id}>
+                                    <td>{p.pharmacyname}</td>
+                                    <td>{p.officialEmail}</td>
+                                    <td>{p.province}</td>
+                                    <td>{p.phone}</td>
+                                    <td className={`status-text status-${p.status}`}>{p.status}</td>
+                                    <td>
+                                        <button className="action-btn action-view">Details</button>
+                                        <button className="action-btn action-suspend">Block</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="table-section">
+
+            {/* 🔴 Pending Pharmacies */}
+            <div className="list-section-header">
+                <h2>
+                  Pending Pharmacies ({pendingPharmacies.length})
+                </h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#FFE2E2'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Owner</th>
+                        <th>Email</th>
+                        <th>License</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {pendingPharmacies.length === 0 ? (
+                        <tr>
+                            <td colSpan="7" style={{ textAlign: 'center' }}>
+                                No pending pharmacies
+                            </td>
+                        </tr>
+                    ) : (
+                        pendingPharmacies.map(p => (
+                            <tr key={p.id}>
+                                <td>{p.pharmacyname}</td>
+                                <td>{p.name}</td>
+                                <td>{p.officialEmail}</td>
+                                <td>{p.licenseNo}</td>
+                                <td>{p.province}</td>
+                                <td>{p.phone}</td>
+                                <td>
+                                    <button 
+    className="action-btn action-approve"
+    onClick={() => {
+    if (window.confirm("Are you sure you want to ACCEPT this pharmacy?")) {
+        handleAcceptPharmacy(p);
+    }
+}}
+
+>
+    Accept
+</button>
+
+<button 
+    className="action-btn action-reject"
+    onClick={() => {
+        if (window.confirm("Are you sure you want to REJECT this pharmacy?")) {
+            updatePharmacyStatus(p.id, "rejected");
+        }
+    }}
+>
+    Reject
+</button>
+
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+
+
+            {/* 🟢 Accepted Pharmacies */}
+            <div className="list-section-header" style={{marginTop: "40px"}}>
+                <h2>Accepted Pharmacies ({acceptedPharmacies.length})</h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#BCFFC6'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Email</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {acceptedPharmacies.map(p => (
+                        <tr key={p.id}>
+                            <td>{p.pharmacyname}</td>
+                            <td>{p.officialEmail}</td>
+                            <td>{p.province}</td>
+                            <td>{p.phone}</td>
+                            <td className="status-text status-accepted">
+                                {p.status}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+
+            {/* ⚫ Rejected Pharmacies */}
+            <div className="list-section-header" style={{marginTop: "40px"}}>
+                <h2>Rejected Pharmacies ({rejectedPharmacies.length})</h2>
+            </div>
+
+            <table className="data-table">
+                <thead>
+                    <tr style={{backgroundColor: '#FFD6D6'}}>
+                        <th>Pharmacy Name</th>
+                        <th>Email</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rejectedPharmacies.map(p => (
+                        <tr key={p.id}>
+                            <td>{p.pharmacyname}</td>
+                            <td>{p.officialEmail}</td>
+                            <td>{p.province}</td>
+                            <td>{p.phone}</td>
+                            <td className="status-text status-rejected">
+                                {p.status}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+        </div>
+                </div>
+
+                
+            );
+
+        
+
 
             case 'doctor':
                 return (
@@ -351,21 +877,55 @@ const unsubscribe = onValue(
         <td>{d.specialization || '-'}</td>
         <td>{d.license || '-'}</td>
         <td>{d.rating ?? 0} ⭐</td>
-        <td className={`status-text status-${(d.status || '').toLowerCase()}`}>{d.status || '-'}</td>
         <td>{d.createdBy || '-'}</td>
+        <td className={`status-text status-${(d.status?.value || d.status || "active")}`}>
+  {(d.status?.value || d.status || "active")}
+</td>
         <td>
-          <button className="action-btn action-view">View Profile</button>
-          <button className="action-btn action-suspend">Suspend</button>
-        </td>
+  <button
+    className="action-btn action-view"
+    onClick={() => handleViewDoctor(d)}
+  >
+    View Profile
+  </button>
+
+  {(d.status?.value || d.status) === "suspended" ? (
+    <button
+      className="action-btn action-approve"
+      onClick={() => {
+        if (window.confirm("Activate this doctor?")) {
+          handleActivateDoctor(d.id);
+        }
+      }}
+    >
+      Activate
+    </button>
+  ) : (
+    <button
+      className="action-btn action-suspend"
+      onClick={() => {
+        if (window.confirm("Suspend this doctor?")) {
+          handleSuspendDoctor(d.id);
+        }
+      }}
+    >
+      Suspend
+    </button>
+  )}
+</td>
       </tr>
     ))
   )}
 </tbody>
 
+
                         </table>
                     </div>
                 );
 
+            
+
+                
             default:
                 return null;
         }
@@ -384,6 +944,10 @@ const unsubscribe = onValue(
         newDoctor={newDoctor}
         handleDoctorInputChange={handleDoctorInputChange}
         handleCreateDoctor={handleCreateDoctor} 
+
+        showDoctorProfileModal={showDoctorProfileModal}
+  setShowDoctorProfileModal={setShowDoctorProfileModal}
+  selectedDoctor={selectedDoctor}
 >
 
             {renderContent()}
