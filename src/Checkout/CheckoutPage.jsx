@@ -5,10 +5,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import './CheckoutPage.css';
 import Logo from '../assets/Logo.jpeg';
 
+
 import { auth, database } from "../Firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { ref, get, push } from "firebase/database";
 import { supabase } from "../supabase";
+
+
 
 // Sandbox Merchant ID for PayHere
 const SANDBOX_MERCHANT_ID = "1234122";

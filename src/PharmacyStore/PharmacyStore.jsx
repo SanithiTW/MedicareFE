@@ -90,72 +90,117 @@ const PharmacyStore = () => {
     }, []);
 
     // Load medicines filtered by selected pharmacy
-    useEffect(() => {
-        const medicinesRef = ref(database, "medicines");
-        const pharmaciesRef = ref(database, "pharmacies");
+   // Load medicines filtered by selected pharmacy
+useEffect(() => {
+    const medicinesRef = ref(database, "medicines");
+    const pharmaciesRef = ref(database, "pharmacies");
 
-        onValue(pharmaciesRef, (pharmacySnap) => {
-            const pharmaciesData = pharmacySnap.val();
-            if (!pharmaciesData || !patientLocation) return;
+    onValue(pharmaciesRef, (pharmacySnap) => {
+        const pharmaciesData = pharmacySnap.val();
+        if (!pharmaciesData || !patientLocation) return;
 
-            onValue(medicinesRef, (medicineSnap) => {
-                const data = medicineSnap.val();
-                if (!data) return;
+        const pharmacyList = Object.keys(pharmaciesData).map(key => ({
+            id: key,
+            ...pharmaciesData[key]
+        }));
 
-                const medMap = {};
+        onValue(medicinesRef, (medicineSnap) => {
+            const data = medicineSnap.val();
+            if (!data) return;
 
-                Object.keys(data).forEach(medId => {
-                    const med = data[medId];
-                    const medName = med.name;
+            const medGroups = {};
 
-                    // Available pharmacies
-                    const availablePharmacies = Object.values(pharmaciesData)
-                        .filter(ph => med.availability === "Available" && (!selectedPharmacyFilter || ph.id === selectedPharmacyFilter.id) && ph.id === med.pharmacyUID);
+            // 🔥 Group medicines by name
+            Object.keys(data).forEach(medId => {
+                const med = data[medId];
 
-                    if (availablePharmacies.length === 0) return;
+                if (med.availability !== "Available") return;
 
-                    // Nearest pharmacy
-                    const nearestPharmacy = availablePharmacies.reduce((prev, curr) => {
-                        const prevDist = getDistance(patientLocation.latitude, patientLocation.longitude, parseFloat(prev.latitude), parseFloat(prev.longitude));
-                        const currDist = getDistance(patientLocation.latitude, patientLocation.longitude, parseFloat(curr.latitude), parseFloat(curr.longitude));
-                        return currDist < prevDist ? curr : prev;
-                    });
+                if (!medGroups[med.name]) {
+                    medGroups[med.name] = [];
+                }
 
-                    // Save product
-                    medMap[medName] = {
-    id: medId,
-    name: med.name,
-    category: med.categories?.[0] || "General",
-    price: Number(med.price) || 0,
-    description: med.description,
-    offer: med.discount || null,
-    image: med.imageUrl || null,
-    dosage: med.dosage,
-    manufacturer: med.manufacturer,
-    expiryDate: med.expiryDate,
-    usageInstructions: med.usageInstructions,
-    warnings: med.warnings,
-    sideEffects: med.sideEffects,
+                medGroups[med.name].push({
+                    id: medId,
+                    ...med
+                });
+            });
 
-    // ✅ SAVE BOTH
-    pharmacyname: nearestPharmacy.pharmacyname,
-    pharmacyUID: med.pharmacyUID,   // 🔥 VERY IMPORTANT
+            const finalProducts = [];
 
-    isAvailable: true,
-    prescriptionRequired: med.prescriptionRequired || false,
-    deliveryFee: Number(med.deliveryFee) || 0
-};
+            // 🔥 For each medicine name, find nearest available pharmacy
+            Object.keys(medGroups).forEach(medName => {
+
+                const availableVersions = medGroups[medName]
+                    .filter(med =>
+                        !selectedPharmacyFilter ||
+                        med.pharmacyUID === selectedPharmacyFilter.id
+                    );
+
+                if (availableVersions.length === 0) return;
+
+                // Sort by distance
+                availableVersions.sort((a, b) => {
+                    const phA = pharmacyList.find(p => p.id === a.pharmacyUID);
+                    const phB = pharmacyList.find(p => p.id === b.pharmacyUID);
+
+                    if (!phA || !phB) return 0;
+
+                    const distA = getDistance(
+                        patientLocation.latitude,
+                        patientLocation.longitude,
+                        parseFloat(phA.latitude),
+                        parseFloat(phA.longitude)
+                    );
+
+                    const distB = getDistance(
+                        patientLocation.latitude,
+                        patientLocation.longitude,
+                        parseFloat(phB.latitude),
+                        parseFloat(phB.longitude)
+                    );
+
+                    return distA - distB;
                 });
 
-                const loadedProducts = Object.values(medMap);
-                setProductsData(loadedProducts);
+                const nearestMed = availableVersions[0];
+                const nearestPharmacy = pharmacyList.find(p => p.id === nearestMed.pharmacyUID);
 
-                const uniqueCategories = [...new Set(loadedProducts.map(p => p.category))];
-                setCategories(uniqueCategories);
-                if (uniqueCategories.length > 0) setSelectedCategory(uniqueCategories[0]);
+                if (!nearestPharmacy) return;
+
+                finalProducts.push({
+                    id: nearestMed.id,
+                    name: nearestMed.name,
+                    category: nearestMed.categories?.[0] || "General",
+                    price: Number(nearestMed.price) || 0,
+                    description: nearestMed.description,
+                    offer: nearestMed.discount || null,
+                    image: nearestMed.imageUrl || null,
+                    dosage: nearestMed.dosage,
+                    manufacturer: nearestMed.manufacturer,
+                    expiryDate: nearestMed.expiryDate,
+                    usageInstructions: nearestMed.usageInstructions,
+                    warnings: nearestMed.warnings,
+                    sideEffects: nearestMed.sideEffects,
+
+                    pharmacyname: nearestPharmacy.pharmacyname,
+                    pharmacyUID: nearestMed.pharmacyUID,
+
+                    isAvailable: true,
+                    prescriptionRequired: nearestMed.prescriptionRequired || false,
+                    deliveryFee: Number(nearestMed.deliveryFee) || 0
+                });
             });
+
+            setProductsData(finalProducts);
+
+            const uniqueCategories = [...new Set(finalProducts.map(p => p.category))];
+            setCategories(uniqueCategories);
+            if (uniqueCategories.length > 0) setSelectedCategory(uniqueCategories[0]);
         });
-    }, [patientLocation, selectedPharmacyFilter]);
+    });
+
+}, [patientLocation, selectedPharmacyFilter]);
 
     const filteredProducts = productsData.filter(p =>
         p.category === selectedCategory &&
@@ -327,6 +372,54 @@ const PharmacyStore = () => {
                     </div>
                 </main>
             </div>
+
+            {/* 🔎 Pharmacy Search Popup */}
+{showPharmacySearch && (
+    <div className="overlay" onClick={() => setShowPharmacySearch(false)}>
+        <div className="popup-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Search Pharmacy</h2>
+
+            <input
+                type="text"
+                placeholder="Search by pharmacy name, city, province..."
+                value={pharmacySearchTerm}
+                onChange={(e) => setPharmacySearchTerm(e.target.value)}
+                className="top-search-bar"
+                style={{ marginBottom: "15px" }}
+            />
+
+            {filteredPharmacies.length === 0 ? (
+                <p>No pharmacies found</p>
+            ) : (
+                filteredPharmacies.map(ph => (
+                    <div
+                        key={ph.id}
+                        className="cart-item"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                            setSelectedPharmacyFilter(ph);
+                            setShowPharmacySearch(false);
+                        }}
+                    >
+                        <p><strong>{ph.pharmacyname}</strong></p>
+                        <p>{ph.address}</p>
+                        <p>{ph.city}, {ph.province}</p>
+                    </div>
+                ))
+            )}
+
+            <button
+                className="cart-popup-close"
+                onClick={() => {
+                    setSelectedPharmacyFilter(null);
+                    setShowPharmacySearch(false);
+                }}
+            >
+                Show All Pharmacies
+            </button>
+        </div>
+    </div>
+)}
 
             {/* Cart Popup */}
             {showCart && (
