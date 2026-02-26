@@ -89,7 +89,7 @@ const PharmacyStore = () => {
         });
     }, []);
 
-    // Load medicines filtered by selected pharmacy
+
    // Load medicines filtered by selected pharmacy
 useEffect(() => {
     const medicinesRef = ref(database, "medicines");
@@ -221,7 +221,7 @@ useEffect(() => {
     qty: 1,
 
     pharmacyname: product.pharmacyname || "Unknown Pharmacy",
-    pharmacyUID: product.pharmacyUID,   // 🔥 ADD THIS
+    pharmacyUID: product.pharmacyUID,   
 
     offer: product.offer || null,
     prescriptionRequired: product.prescriptionRequired || false,
@@ -246,8 +246,7 @@ useEffect(() => {
     qty: 1,
 
     pharmacyname: product.pharmacyname || "Unknown Pharmacy",
-    pharmacyUID: product.pharmacyUID,  // 🔥 ADD THIS
-
+    pharmacyUID: product.pharmacyUID,  
     offer: product.offer || null,
     prescriptionRequired: product.prescriptionRequired || false,
     deliveryFee: product.deliveryFee || 250,
@@ -373,7 +372,7 @@ useEffect(() => {
                 </main>
             </div>
 
-            {/* 🔎 Pharmacy Search Popup */}
+            {/*  Pharmacy Search Popup */}
 {showPharmacySearch && (
     <div className="overlay" onClick={() => setShowPharmacySearch(false)}>
         <div className="popup-modal" onClick={(e) => e.stopPropagation()}>
@@ -443,6 +442,35 @@ useEffect(() => {
                     </div>
                 </div>
             )}
+
+            {/* Medicine Details Popup */}
+{selectedProduct && (
+    <div className="overlay" onClick={() => setSelectedProduct(null)}>
+        <div className="popup-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{selectedProduct.name}</h2>
+            {selectedProduct.image 
+                ? <img src={selectedProduct.image} alt={selectedProduct.name} className="medicine-image" /> 
+                : <div className="placeholder-img">No Image</div>
+            }
+            <p><strong>Category:</strong> {selectedProduct.category}</p>
+            <p><strong>Price:</strong> Rs. {selectedProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p><strong>Pharmacy:</strong> {selectedProduct.pharmacyname}</p>
+            <p><strong>Dosage:</strong> {selectedProduct.dosage}</p>
+            <p><strong>Manufacturer:</strong> {selectedProduct.manufacturer}</p>
+            <p><strong>Expiry Date:</strong> {selectedProduct.expiryDate}</p>
+            <p><strong>Description:</strong> {selectedProduct.description}</p>
+            {selectedProduct.usageInstructions && <p><strong>Usage:</strong> {selectedProduct.usageInstructions}</p>}
+            {selectedProduct.warnings && <p><strong>Warnings:</strong> {selectedProduct.warnings}</p>}
+            {selectedProduct.sideEffects && <p><strong>Side Effects:</strong> {selectedProduct.sideEffects}</p>}
+
+            <div className="popup-actions">
+                <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>Add to Cart</button>
+                <button onClick={() => { buyNowSingle(selectedProduct); setSelectedProduct(null); }}>Buy Now</button>
+                <button onClick={() => setSelectedProduct(null)}>Close</button>
+            </div>
+        </div>
+    </div>
+)}
         </div>
     );
 };
