@@ -1,16 +1,75 @@
-# React + Vite
+ 🩺 Medicare – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ 📌 Project Overview
+**Medicare** is a digital healthcare management platform that allows patients to securely manage their medical records, family health profiles, and medical reports in one place.
 
-Currently, two official plugins are available:
+This repository contains the **frontend application** of the Medicare system. It provides a clean and responsive user interface that enables users to interact with the healthcare system easily and securely.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The system helps patients store important health information digitally and access it anytime.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+ 🚀 Key Features
 
-## Expanding the ESLint configuration
+ 🔐 Secure Authentication
+- User registration with email and password
+- Google Sign-In support
+- Secure login and logout system
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+ 👤 Profile Management
+- Create and update personal health profiles
+- Store important medical information
+- Manage personal healthcare data
+
+ 👨‍👩‍👧 Family Member Management
+- Add and manage family members
+- Maintain health profiles for dependents
+- Access multiple health profiles from one account
+
+ 📄 Medical Report Management
+- Upload medical reports securely
+- View and manage uploaded documents
+- Organized digital medical record storage
+
+ 🔗 Backend API Integration
+- Communicates with backend REST APIs
+- Handles user data and medical records securely
+- Provides real-time data updates
+
+---
+
+ 🛠 Technologies Used
+
+- **React.js**
+- **JavaScript**
+- **Firebase Authentication**
+- **Firebase Realtime Database**
+- **HTML5**
+- **CSS3**
+- **REST API Integration**
+- **PayHere Payment Gateway**
+
+
+---
+
+## 🖼 System Interfaces
+
+
+Example:
+- Login Page
+- Patient Dashboard
+- Profile Management Page
+- Medical Report Upload Page
+- Family Member Management Page
+
+---
+
+## 👨‍💻 Author
+**Sanithi Thiyanga**
+
+---
+
+## 📄 License
+This project was developed for **educational and research purposes**.
+
+---
